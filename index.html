@@ -389,7 +389,7 @@ dialog img.cheia{max-height:88vh}
 const GITHUB_USUARIO = "SEU-USUARIO";
 const GITHUB_REPO    = "SEU-REPOSITORIO";
 const BRANCH         = "main";
-const PASTA_FOTOS    = "galeria";
+const PASTA_FOTOS    = "";          // "" = fotos soltas na raiz do repositório
 const PASTA_BLOG     = "blog";
 const MEMBROS = [
   "Nome do Membro", "Outro Membro", "Mais um Membro"
@@ -448,14 +448,14 @@ const FOTOS_PADRAO = ["ii-inlaw-experience.jpg","encontro-do-grupo.jpg","manual-
 const elFotos = document.getElementById("fotos");
 function mostrarFotos(nomes){
   if(!nomes.length){ elFotos.innerHTML = '<p class="vazio">As fotos aparecem aqui assim que forem adicionadas.</p>'; return; }
-  const botao = n => { const alt = n.replace(/\.\w+$/,"").replace(/[-_]/g," "); return `<button aria-label="Ampliar foto: ${alt}"><img src="${PASTA_FOTOS}/${n}" alt="${alt}"></button>`; };
+  const botao = n => { const alt = n.replace(/\.\w+$/,"").replace(/[-_]/g," "); return `<button aria-label="Ampliar foto: ${alt}"><img src="${PASTA_FOTOS ? PASTA_FOTOS + "/" : ""}${n}" alt="${alt}"></button>`; };
   const linha = (lista, volta) => { let rep = lista; while(rep.length < 8) rep = rep.concat(lista); const html = rep.map(botao).join(""); return `<div class="trilho${volta ? " volta" : ""}" style="--tempo:${Math.max(30, lista.length * 9)}s">${html}${html}</div>`; };
   const meio = Math.ceil(nomes.length / 2);
   elFotos.innerHTML = nomes.length > 5 ? linha(nomes.slice(0, meio)) + linha(nomes.slice(meio), true) : linha(nomes);
   elFotos.querySelectorAll("button").forEach(b => b.onclick = () => { const i = b.querySelector("img"); abrir(`<img class="cheia" src="${i.src}" alt="${i.alt}">`); });
 }
 fetch(api(PASTA_FOTOS)).then(r => r.ok ? r.json() : Promise.reject())
-  .then(arqs => mostrarFotos(arqs.filter(a => /\.(jpe?g|png|webp)$/i.test(a.name)).map(a => a.name)))
+  .then(arqs => mostrarFotos(arqs.filter(a => a.type === "file" && /\.(jpe?g|png|webp)$/i.test(a.name) && !/^(logo|favicon|capa|encontro)\./i.test(a.name)).map(a => a.name)))
   .catch(() => mostrarFotos(FOTOS_PADRAO));
 
 /* ---------- Blog em feed ----------
