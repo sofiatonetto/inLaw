@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IN LAW · Laboratório de Inovação e Direito – AMF</title>
-<meta name="description" content="IN LAW – Laboratório de Inovação e Direito da Antonio Meneghetti Faculdade.">
+<title>InLaw · Laboratório de Inovação e Direito – AMF</title>
+<meta name="description" content="InLaw – Laboratório de Inovação e Direito da Antonio Meneghetti Faculdade.">
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;1,8..60,400&family=Jost:wght@400;500;600&family=Archivo:wght@800;900&display=swap" rel="stylesheet">
@@ -56,15 +56,12 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 /* ===== Capa ===== */
 .capa{display:grid;grid-template-columns:1fr 1.05fr;min-height:min(78vh,680px);overflow:hidden;position:relative;background:var(--creme)}
 .capa .texto{display:flex;flex-direction:column;justify-content:center;padding:70px 40px 70px max(28px,calc((100vw - 1200px)/2 + 28px));position:relative;z-index:2}
-.capa::before{content:"";position:absolute;width:420px;height:420px;border:1.5px solid var(--laranja);border-radius:50%;left:-300px;top:50%;transform:translateY(-50%)}
 .capa h1{font-size:clamp(2.6rem,5.2vw,4.2rem);margin-bottom:22px}
 .capa .eixos{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
 .capa .eixos span{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--roxo);background:var(--lilas);padding:6px 14px}
 .capa p{max-width:46ch;margin-bottom:34px;font-size:1.1rem}
 .capa .imagem{position:relative;background:var(--creme-escuro) url("capa.jpg") center/cover}
 .capa .imagem::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--creme) 0%,rgba(245,241,235,0) 28%)}
-.capa .imagem .circulo{position:absolute;width:62%;aspect-ratio:1;left:4%;bottom:-24%;border-radius:50%;background:var(--roxo-medio);opacity:.82;mix-blend-mode:multiply}
-.capa .imagem .anel{position:absolute;width:58%;aspect-ratio:1;left:-6%;top:28%;border-radius:50%;border:1.5px solid var(--laranja)}
 .capa .selo-amf{position:absolute;right:28px;bottom:24px;background:rgba(58,26,92,.92);color:#fff;padding:12px 18px;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase}
 @media(max-width:860px){.capa{grid-template-columns:1fr}.capa .imagem{min-height:340px;order:-1}.capa .imagem::before{background:linear-gradient(0deg,var(--creme) 0%,rgba(245,241,235,0) 30%)}.capa .texto{padding:40px 28px 60px}}
 
@@ -190,7 +187,6 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 
 /* ===== Contato ===== */
 .contato{background:var(--creme-escuro);text-align:center;overflow:hidden}
-.contato::before{content:"";position:absolute;width:360px;height:360px;border:1.5px solid var(--laranja);border-radius:50%;right:-180px;top:-120px}
 .contato .traco{margin:0 auto 22px}
 .contato p{margin:0 auto 34px;max-width:50ch;color:var(--cinza)}
 .contato .acoes{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
@@ -201,8 +197,7 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 footer{background:var(--roxo);color:#fff;padding:34px 0}
 footer .wrap{display:flex;align-items:center;gap:36px;flex-wrap:wrap}
 footer img{width:76px;border-radius:50%;background:#fff;padding:2px}
-footer blockquote{flex:1;min-width:260px;font-family:var(--serif);font-style:italic;font-size:1.2rem;line-height:1.5;padding-left:36px;border-left:1px solid rgba(255,255,255,.3)}
-footer .assina{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;line-height:1.8;padding-left:36px;border-left:1px solid rgba(255,255,255,.3)}
+footer .assina{margin-left:auto;font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;line-height:1.8;padding-left:36px;border-left:1px solid rgba(255,255,255,.3)}
 footer .assina span{display:block;text-transform:none;letter-spacing:0;opacity:.75;font-size:.85rem}
 
 /* ===== Modal ===== */
@@ -222,8 +217,8 @@ dialog img.cheia{max-height:88vh}
 <header class="cabecalho">
   <div class="wrap">
     <a class="marca" href="#inicio">
-      <img src="logo.png" alt="Selo IN LAW">
-      <strong>IN LAW</strong>
+      <img src="logo.png" alt="Selo InLaw">
+      <strong>InLaw</strong>
       <span>Laboratório de Inovação e Direito</span>
     </a>
     <button class="menu-btn" aria-label="Abrir menu" onclick="document.getElementById('menu').classList.toggle('aberto')">☰</button>
@@ -236,7 +231,7 @@ dialog img.cheia{max-height:88vh}
       <li><a href="#galeria">Galeria</a></li>
       <li><a href="#contato">Contato</a></li>
     </ul>
-    <a class="insta" href="https://www.instagram.com/inlaw.lab/" target="_blank" aria-label="Instagram do IN LAW">
+    <a class="insta" href="https://www.instagram.com/inlaw.lab/" target="_blank" aria-label="Instagram do InLaw">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
     </a>
   </div>
@@ -248,11 +243,10 @@ dialog img.cheia{max-height:88vh}
     <span class="traco"></span>
     <h1>Direito que se conecta com o futuro.</h1>
     <div class="eixos"><span>Direito</span><span>Tecnologia</span><span>Inovação</span></div>
-    <p>O IN LAW é o Laboratório de Inovação e Direito da Antonio Meneghetti Faculdade: um espaço de pesquisa, debate e prática para pensar o Direito a partir de novas ideias, tecnologias e pessoas.</p>
+    <p>O InLaw é o Laboratório de Inovação e Direito da Antonio Meneghetti Faculdade: um espaço de pesquisa, debate e prática para pensar o Direito a partir de novas ideias, tecnologias e pessoas.</p>
     <div><a class="btn" href="#sobre">Conheça o laboratório <svg width="18" height="12" viewBox="0 0 18 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M0 6h16M11 1l5 5-5 5"/></svg></a></div>
   </div>
   <div class="imagem" role="img" aria-label="Estátua da Justiça">
-    <div class="circulo"></div><div class="anel"></div>
     <div class="selo-amf">Antonio Meneghetti Faculdade</div>
   </div>
 </section>
@@ -260,10 +254,10 @@ dialog img.cheia{max-height:88vh}
 <section class="secao" id="sobre">
   <div class="wrap sobre">
     <div>
-      <p class="chapeu">Sobre o IN LAW</p>
+      <p class="chapeu">Sobre o InLaw</p>
       <span class="traco"></span>
       <h2>Inovação, pesquisa e impacto social.</h2>
-      <p>Criado em 2023 no curso de Direito da AMF, o IN LAW nasce para fomentar o pensamento crítico e a prática inovadora, aproximando a academia, o mercado e a sociedade.</p>
+      <p>Criado em 2023 no curso de Direito da AMF, o InLaw nasce para fomentar o pensamento crítico e a prática inovadora, aproximando a academia, o mercado e a sociedade.</p>
     </div>
     <div class="pilares">
       <div class="pilar">
@@ -285,7 +279,7 @@ dialog img.cheia{max-height:88vh}
 <!-- FAIXA: foto encontro.jpg -->
 <section class="faixa" id="fazemos">
   <div class="lateral"><span class="traco"></span><ul><li>Estudo</li><li>Debate</li><li class="on">Inovação</li><li>Impacto</li></ul></div>
-  <div class="foto" role="img" aria-label="Encontro do IN LAW"></div>
+  <div class="foto" role="img" aria-label="Encontro do InLaw"></div>
   <div class="texto">
     <p class="chapeu">O que fazemos</p>
     <span class="traco"></span>
@@ -299,7 +293,7 @@ dialog img.cheia{max-height:88vh}
   <div class="wrap">
     <p class="chapeu">Equipe</p>
     <span class="traco"></span>
-    <h2>Quem faz o IN LAW.</h2>
+    <h2>Quem faz o InLaw.</h2>
     <p class="intro">Coordenação docente e membros ativos do laboratório.</p>
     <div class="coord">
       <!-- Foto: troque "AR" por <img src="equipe/aline.jpg" alt="Aline Rospa"> -->
@@ -340,7 +334,7 @@ dialog img.cheia{max-height:88vh}
     <p class="chapeu">Agenda</p>
     <span class="traco"></span>
     <h2>Nossos encontros.</h2>
-    <p class="intro">O tema de cada encontro do IN LAW, semestre a semestre.</p>
+    <p class="intro">O tema de cada encontro do InLaw, semestre a semestre.</p>
     <div id="encontros"></div>
     <h3 style="font-size:1.6rem;margin:10px 0 20px">Eventos e notícias</h3>
     <!-- EDITE: use class="evento passado" para eventos que já aconteceram -->
@@ -365,20 +359,18 @@ dialog img.cheia{max-height:88vh}
   <div class="wrap">
     <p class="chapeu">Contato</p>
     <span class="traco"></span>
-    <h2>Faça parte do IN LAW.</h2>
-    <p>Quer participar dos encontros ou enviar um texto para o blog? Fale com a coordenação.</p>
+    <h2>Faça parte do InLaw.</h2>
+    <p>Quer participar dos encontros ou enviar um texto para o blog? Fale com a gente pelo Instagram.</p>
     <div class="acoes">
-      <a class="btn" href="mailto:contato@exemplo.com">Enviar e-mail</a>
-      <a class="btn btn-claro" href="https://www.instagram.com/inlaw.lab/" target="_blank">@inlaw.lab</a>
+      <a class="btn" href="https://www.instagram.com/inlaw.lab/" target="_blank">Siga @inlaw.lab no Instagram</a>
     </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <img src="logo.png" alt="Selo IN LAW">
-    <blockquote>“O futuro do Direito se constrói com conhecimento, colaboração e coragem para inovar.”</blockquote>
-    <div class="assina">IN LAW · AMF<span>Laboratório de Inovação e Direito · <span id="ano" style="display:inline"></span></span></div>
+    <img src="logo.png" alt="Selo InLaw">
+    <div class="assina">InLaw · AMF<span>Laboratório de Inovação e Direito · <span id="ano" style="display:inline"></span></span></div>
   </div>
 </footer>
 
@@ -466,16 +458,16 @@ Arquivo .md na pasta blog/:
 Opcional: "capa: galeria/foto.jpg" usa a imagem original do Insta no lugar do card gerado.
 */
 const EXEMPLOS = [
-  {titulo:"Coordenador de Proteção de Dados", serie:"As Profissões do Futuro!", autor:"IN LAW", data:"", capa:"", corpo:"O **DPO** (Data Protection Officer) é quem garante que uma empresa trate os dados pessoais de acordo com a LGPD.\n\nTexto completo em breve."},
-  {titulo:"LawTechs - LegalTechs", serie:"As Profissões do Futuro!", autor:"IN LAW", data:"", capa:"", corpo:"Empresas que usam tecnologia para resolver problemas jurídicos: automação de documentos, jurimetria, gestão de processos e muito mais.\n\nTexto completo em breve."},
-  {titulo:"Marketing Jurídico", serie:"As Profissões do Futuro!", autor:"IN LAW", data:"", capa:"", corpo:"Como advogados e escritórios podem se comunicar nas redes respeitando as regras da OAB.\n\nTexto completo em breve."}
+  {titulo:"Coordenador de Proteção de Dados", serie:"As Profissões do Futuro!", autor:"InLaw", data:"", capa:"", corpo:"O **DPO** (Data Protection Officer) é quem garante que uma empresa trate os dados pessoais de acordo com a LGPD.\n\nTexto completo em breve."},
+  {titulo:"LawTechs - LegalTechs", serie:"As Profissões do Futuro!", autor:"InLaw", data:"", capa:"", corpo:"Empresas que usam tecnologia para resolver problemas jurídicos: automação de documentos, jurimetria, gestão de processos e muito mais.\n\nTexto completo em breve."},
+  {titulo:"Marketing Jurídico", serie:"As Profissões do Futuro!", autor:"InLaw", data:"", capa:"", corpo:"Como advogados e escritórios podem se comunicar nas redes respeitando as regras da OAB.\n\nTexto completo em breve."}
 ];
 function lerPost(txt, nome){
   const l = txt.split("\n");
   let titulo = nome.replace(/\.md$/,"").replace(/[-_]/g," "), info = {};
   if(l[0]?.startsWith("# ")) titulo = l.shift().slice(2).trim();
   if(/^(serie|série|autor|data|capa):/i.test(l[0]||"")) l.shift().split("|").forEach(p => { const [k,...v] = p.split(":"); info[k.trim().toLowerCase().replace("série","serie")] = v.join(":").trim(); });
-  return {titulo, serie:info.serie||"IN LAW Explica", autor:info.autor||"", data:info.data||"", capa:info.capa||"", corpo:l.join("\n").trim()};
+  return {titulo, serie:info.serie||"InLaw Explica", autor:info.autor||"", data:info.data||"", capa:info.capa||"", corpo:l.join("\n").trim()};
 }
 const resumo = md => md.replace(/[#*_>`\[\]]/g,"").replace(/\(.*?\)/g,"").replace(/\s+/g," ").trim();
 const cursor = '<svg width="18" height="22" viewBox="0 0 18 22"><path d="M2 1v17l4.5-4 3 7 3-1.3-3-6.8H16z" fill="#fff" stroke="#111" stroke-width="1.2"/></svg>';
