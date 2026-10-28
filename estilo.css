@@ -33,7 +33,11 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 .cabecalho ul{display:flex;gap:30px;list-style:none}
 .cabecalho ul a{color:#fff;text-decoration:none;font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;padding:8px 0;border-bottom:2px solid transparent}
 .cabecalho ul a:hover,.cabecalho ul a.ativo{border-color:var(--laranja)}
+.cabecalho .icones{display:flex;align-items:center;gap:18px}
 .cabecalho .insta{color:#fff;display:flex}
+.prof-icone{all:unset;cursor:pointer;color:#fff;display:flex;opacity:.85}
+.prof-icone:hover,.prof-icone:focus-visible{opacity:1}
+body.prof .prof-icone{color:var(--laranja);opacity:1}
 .menu-btn{display:none;background:none;border:0;color:#fff;font-size:1.8rem;cursor:pointer}
 @media(max-width:1050px){
   .marca span{display:none}.marca strong{border:0}
@@ -152,13 +156,9 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 .cal.proximo .dia small::after{content:" · próximo";color:var(--laranja);font-weight:600}
 
 /* ===== Chamada (professores/admin) ===== */
-.area-prof{display:flex;justify-content:flex-end;margin:-30px 0 24px}
-.area-prof button,.cal .abrir-chamada,.chamada button{all:unset;cursor:pointer;font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
-.area-prof button{color:var(--roxo-medio);border-bottom:1px solid currentColor;padding-bottom:2px}
-.cal .abrir-chamada{display:none;margin:0 16px 16px;text-align:center;background:var(--roxo);color:#fff;padding:9px 0}
+.cal .abrir-chamada,.chamada button,.painel-acoes button{all:unset;cursor:pointer;font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.cal .abrir-chamada{display:block;margin:0 16px 16px;text-align:center;background:var(--roxo);color:#fff;padding:9px 0}
 .cal .abrir-chamada:hover{background:var(--roxo-medio)}
-body.prof .cal .abrir-chamada{display:block}
-body.prof .cal{opacity:1}
 .cal .abrir-chamada small{display:block;font-size:.68rem;letter-spacing:.1em;opacity:.8;margin-top:2px}
 .chamada{background:var(--creme);padding:clamp(24px,4vw,44px);max-height:92vh;overflow:auto;width:min(760px,94vw)}
 .chamada h1{font-size:clamp(1.5rem,3vw,2rem);margin-bottom:20px}
@@ -197,6 +197,18 @@ body.prof .cal{opacity:1}
 .presenca-logo{width:84px;margin:0 auto 14px;border-radius:50%}
 .presenca input{text-align:left}
 .presenca-ok{font-family:var(--serif);font-size:1.4rem;color:var(--roxo);line-height:1.5;padding:12px 0 4px}
+
+/* ===== Painel da área do professor ===== */
+.painel-prof{position:fixed;inset:96px 0 0 0;z-index:40;background:var(--creme);overflow:auto;padding:56px 0 80px}
+.painel-prof[hidden]{display:none}
+body.painel-aberto{overflow:hidden}
+.painel-topo{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:44px}
+.painel-topo h2{margin:0}
+.painel-acoes{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.painel-acoes .acao{background:var(--roxo);color:#fff;padding:12px 20px}
+.painel-acoes .acao:hover{background:var(--roxo-medio)}
+.painel-acoes .acao.claro{background:transparent;color:var(--roxo);border:1px solid var(--roxo)}
+.painel-acoes .sair{color:var(--cinza);padding:12px 8px;text-decoration:underline;text-underline-offset:4px}
 
 /* ===== Eventos ===== */
 .eventos{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
