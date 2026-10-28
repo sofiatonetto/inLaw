@@ -79,8 +79,8 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 /* ===== Equipe ===== */
 .coord{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:34px;margin-bottom:64px}
 .pessoa{display:grid;grid-template-columns:150px 1fr;gap:26px;align-items:center}
-.pessoa .foto{width:150px;aspect-ratio:1;border-radius:50%;background:var(--lilas);display:grid;place-items:center;font-family:var(--serif);font-size:2.6rem;color:var(--roxo);overflow:hidden;box-shadow:10px 10px 0 -2px var(--creme),10px 10px 0 0 var(--laranja)}
-.pessoa .foto img{width:100%;height:100%;object-fit:cover}
+.pessoa .foto{width:150px;aspect-ratio:1;border-radius:50%;background:var(--lilas);display:grid;place-items:center;font-family:var(--serif);font-size:2.6rem;color:var(--roxo);overflow:hidden;box-shadow:0 0 0 5px var(--creme),0 0 0 7px var(--laranja)}
+.pessoa .foto img{width:100%;height:100%;object-fit:cover;object-position:center 25%}
 .pessoa h3{font-size:1.6rem}
 .pessoa .cargo{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--laranja);margin:4px 0 8px;font-weight:600}
 .membros-titulo{font-family:var(--sans);font-size:.88rem;letter-spacing:.24em;text-transform:uppercase;margin-bottom:20px;padding-top:30px;border-top:1px solid var(--linha)}
@@ -90,12 +90,12 @@ h2{font-size:clamp(2rem,3.8vw,2.8rem);margin-bottom:18px}
 
 /* ===== Publicações ===== */
 .pubs{list-style:none}
-.pubs li{display:grid;grid-template-columns:90px 1fr auto;gap:28px;align-items:center;padding:26px 0;border-top:1px solid var(--linha)}
+.pubs li{display:grid;grid-template-columns:90px 1fr;gap:28px;align-items:center;padding:26px 0;border-top:1px solid var(--linha)}
 .pubs li:last-child{border-bottom:1px solid var(--linha)}
 .pubs .ano{font-family:var(--serif);font-size:1.8rem;color:var(--laranja)}
 .pubs .tipo{font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--roxo-medio)}
 .pubs h3{font-size:1.35rem;margin:2px 0}
-.pubs p{color:var(--cinza);font-size:.96rem}
+.pubs p{color:var(--cinza);font-size:.96rem;max-width:70ch}
 @media(max-width:700px){.pubs li{grid-template-columns:1fr;gap:6px}}
 
 /* ===== Blog ===== */
@@ -181,6 +181,22 @@ body.prof .cal{opacity:1}
 .login input{font:inherit;padding:12px 14px;border:1px solid var(--linha);width:100%;margin-bottom:10px}
 .login button{all:unset;cursor:pointer;display:block;text-align:center;background:var(--roxo);color:#fff;padding:12px;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;width:100%;box-sizing:border-box}
 @media(max-width:560px){.chamada form{grid-template-columns:1fr}}
+
+.chamada-topo{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.chamada-topo h1{margin:0}
+.chamada .acao:disabled,.presenca button:disabled{opacity:.6;cursor:wait}
+.qr-tela{background:#fff;padding:clamp(24px,4vw,48px);text-align:center;width:min(560px,94vw);max-height:92vh;overflow:auto}
+.qr-tela .qr-dica{color:var(--cinza);margin-bottom:6px}
+.qr-tela h1{font-size:clamp(1.6rem,3vw,2.2rem);margin-bottom:22px}
+#qr-codigo{display:flex;justify-content:center;margin-bottom:20px}
+#qr-codigo img,#qr-codigo canvas{width:min(340px,70vw);height:auto}
+.qr-total{margin-bottom:24px;color:var(--cinza)}
+.qr-total b{font-family:var(--serif);font-size:2.4rem;color:var(--roxo);margin-right:6px}
+.qr-tela .acao{all:unset;cursor:pointer;display:inline-block;font-size:.74rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:12px 20px;border:1px solid var(--roxo);color:var(--roxo)}
+.presenca{text-align:center}
+.presenca-logo{width:84px;margin:0 auto 14px;border-radius:50%}
+.presenca input{text-align:left}
+.presenca-ok{font-family:var(--serif);font-size:1.4rem;color:var(--roxo);line-height:1.5;padding:12px 0 4px}
 
 /* ===== Eventos ===== */
 .eventos{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
