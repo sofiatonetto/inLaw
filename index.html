@@ -26,13 +26,18 @@
       <li><a href="#sobre">O laboratório</a></li>
       <li><a href="#equipe">Equipe</a></li>
       <li><a href="#blog">Blog</a></li>
-      <li><a href="#eventos">Encontros</a></li>
+      <li><a href="#eventos">Eventos</a></li>
       <li><a href="#galeria">Galeria</a></li>
       <li><a href="#contato">Contato</a></li>
     </ul>
-    <a class="insta" href="https://www.instagram.com/inlaw.lab/" target="_blank" aria-label="Instagram do InLaw">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
-    </a>
+    <div class="icones">
+      <a class="insta" href="https://www.instagram.com/inlaw.lab/" target="_blank" aria-label="Instagram do InLaw">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+      </a>
+      <button class="prof-icone" id="btn-prof" type="button" aria-label="Área do professor" title="Área do professor">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -167,11 +172,8 @@
   <div class="wrap">
     <p class="chapeu">Agenda</p>
     <span class="traco"></span>
-    <h2>Nossos encontros.</h2>
-    <p class="intro">O tema de cada encontro do InLaw, semestre a semestre.</p>
-    <div class="area-prof"><button id="btn-prof" type="button">Área do professor</button></div>
-    <div id="encontros"></div>
-    <h3 style="font-size:1.6rem;margin:10px 0 20px">Eventos e notícias</h3>
+    <h2>Eventos e notícias.</h2>
+    <p class="intro">Palestras, encontros especiais e acontecimentos do laboratório.</p>
     <!-- EDITE: use class="evento passado" para eventos que já aconteceram -->
     <div class="eventos">
       <div class="evento passado">
@@ -210,6 +212,25 @@
     <div class="assina"><b>InLaw</b> · AMF<span>Laboratório de Inovação e Direito · <span id="ano" style="display:inline"></span></span></div>
   </div>
 </footer>
+
+<!-- ÁREA DO PROFESSOR: só aparece depois de entrar pelo ícone de pessoa no topo -->
+<section class="painel-prof" id="area-professor" hidden>
+  <div class="wrap">
+    <div class="painel-topo">
+      <div>
+        <p class="chapeu">Área do professor</p>
+        <span class="traco"></span>
+        <h2>Chamadas dos encontros.</h2>
+      </div>
+      <div class="painel-acoes">
+        <button class="acao" id="exportar-tudo" type="button">Exportar todas as chamadas</button>
+        <button class="acao claro" id="fechar-painel" type="button">Voltar ao site</button>
+        <button class="sair" id="sair-prof" type="button">Sair</button>
+      </div>
+    </div>
+    <div id="encontros"></div>
+  </div>
+</section>
 
 <dialog id="modal"><button class="fechar" aria-label="Fechar" onclick="modal.close()">×</button><div id="modal-conteudo"></div></dialog>
 
