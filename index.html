@@ -95,9 +95,22 @@
     <h2>Quem faz o InLaw.</h2>
     <p class="intro">Coordenação docente e membros ativos do laboratório.</p>
     <div class="coord">
-      <!-- Foto: troque "AR" por <img src="equipe/aline.jpg" alt="Aline Rospa"> -->
-      <div class="pessoa"><div class="foto"><img src="aline.jpeg"</div><div><h3>Aline Rospa</h3><p class="cargo">Coordenadora</p><a href="#" target="_blank">Currículo Lattes</a></div></div>
-      <div class="pessoa"><div class="foto"><img src="pedro.jpeg"</div><div><h3>Pedro Hermes</h3><p class="cargo">Coordenador</p><a href="#" target="_blank">Currículo Lattes</a></div></div>
+      <div class="pessoa">
+        <div class="foto"><img src="aline.jpeg" alt="Aline Rospa"></div>
+        <div>
+          <h3>Aline Rospa</h3>
+          <p class="cargo">Coordenadora</p>
+          <a href="#" target="_blank">Currículo Lattes</a>
+        </div>
+      </div>
+      <div class="pessoa">
+        <div class="foto"><img src="pedro.jpeg" alt="Pedro Hermes"></div>
+        <div>
+          <h3>Pedro Hermes</h3>
+          <p class="cargo">Coordenador</p>
+          <a href="#" target="_blank">Currículo Lattes</a>
+        </div>
+      </div>
     </div>
     <h3 class="membros-titulo">Membros ativos</h3>
     <ul class="membros" id="membros"></ul>
@@ -111,8 +124,30 @@
     <h2>Projetos e publicações.</h2>
     <p class="intro">Pesquisas e trabalhos desenvolvidos pelos membros do laboratório.</p>
     <ul class="pubs">
-      <li><span class="ano">2026</span><div><span class="tipo">Artigo</span><h3>Título da publicação</h3><p>Autores · Revista ou evento</p></div><a class="link-seta" href="#">Ler</a></li>
-      <li><span class="ano">2025</span><div><span class="tipo">Projeto</span><h3>Nome do projeto de pesquisa</h3><p>Em andamento · O que o projeto investiga</p></div><a class="link-seta" href="#">Saiba mais</a></li>
+      <li>
+        <span class="ano">2026</span>
+        <div>
+          <span class="tipo">Projeto de extensão</span>
+          <h3>InLaw nas Escolas</h3>
+          <p>Visitas a escolas da região para conversar com crianças e adolescentes sobre o uso ético e seguro da inteligência artificial, com o guia “Pequenos códigos, grandes valores”.</p>
+        </div>
+      </li>
+      <li>
+        <span class="ano">2026</span>
+        <div>
+          <span class="tipo">Evento</span>
+          <h3>II InLaw Experience</h3>
+          <p>Uma noite de prática, inovação e tecnologia para entender o que está acontecendo no mercado jurídico, com Cristiano Colombo e Gustavo Sudbrack. Auditório Principal da AMF.</p>
+        </div>
+      </li>
+      <li>
+        <span class="ano">2026</span>
+        <div>
+          <span class="tipo">Publicação</span>
+          <h3>Cartilha: Manual de bom uso da Inteligência Artificial Generativa</h3>
+          <p>Material produzido pelo InLaw com orientações práticas para usar a IA generativa de forma ética e responsável.</p>
+        </div>
+      </li>
     </ul>
   </div>
 </section>
@@ -139,8 +174,10 @@
     <h3 style="font-size:1.6rem;margin:10px 0 20px">Eventos e notícias</h3>
     <!-- EDITE: use class="evento passado" para eventos que já aconteceram -->
     <div class="eventos">
-      <div class="evento"><div class="data"><b>00</b><span>nov</span></div><div><span class="status">Próximo</span><h3>Nome do evento</h3><p>Local · Horário · Descrição</p></div></div>
-      <div class="evento passado"><div class="data"><b>00</b><span>set</span></div><div><span class="status">Realizado</span><h3>Palestra convidada</h3><p>Antonio Meneghetti Faculdade</p></div></div>
+      <div class="evento passado">
+        <div class="data"><b>30</b><span>abr</span></div>
+        <div><span class="status">Realizado</span><h3>II InLaw Experience</h3><p>19h · Auditório Principal da AMF · com Cristiano Colombo e Gustavo Sudbrack</p></div>
+      </div>
     </div>
   </div>
 </section>
@@ -176,6 +213,7 @@
 
 <dialog id="modal"><button class="fechar" aria-label="Fechar" onclick="modal.close()">×</button><div id="modal-conteudo"></div></dialog>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
