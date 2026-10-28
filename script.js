@@ -17,17 +17,10 @@ const MEMBROS = [
   "Mais um Membro",
 ];
 
-// Encontros: data (ano-mês-dia) e tema.
-// O dia da semana, o semestre e o "próximo encontro" são calculados sozinhos.
+// Encontros (aparecem só na Área do professor): data (ano-mês-dia) e, se quiser, o tema.
+// Para cada novo encontro, copie uma linha e troque a data.
 const ENCONTROS = [
-  { data: "2026-03-12", tema: "Abertura: o que é inovação no Direito?" },
-  { data: "2026-04-09", tema: "Inteligência artificial nos tribunais" },
-  { data: "2026-05-07", tema: "LGPD e proteção de dados" },
-  { data: "2026-06-11", tema: "LawTechs e LegalTechs" },
-  { data: "2026-08-17", tema: "As profissões do futuro" },
-  { data: "2026-09-14", tema: "Marketing jurídico e redes sociais" },
-  { data: "2026-10-19", tema: "Contratos inteligentes" },
-  { data: "2026-11-09", tema: "Tema a definir" },
+  { data: "2026-11-09", tema: "" },
 ];
 
 // Senha da área do professor (padrão: inlaw2026).
@@ -163,11 +156,12 @@ function desenharCalendarios() {
         <div class="cal ${classe}">
           <div class="mes">${e.dia.toLocaleDateString("pt-BR", { month: "long" })}</div>
           <div class="dia"><b>${e.dia.getDate()}</b><small>${diaDaSemana(e.dia)}</small></div>
-          <div class="tema">${e.tema}</div>
+          ${e.tema ? `<div class="tema">${e.tema}</div>` : ""}
           <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${contarPresentes(e.data) ?? "abrir"}${contarPresentes(e.data) === null ? "" : " presentes"}</small></button>
         </div>`;
   };
 
+  if (!encontros.length) { $("encontros").innerHTML = '<p class="vazio">Nenhum encontro cadastrado. Adicione as datas em ENCONTROS, no topo do script.js.</p>'; return; }
   $("encontros").innerHTML = Object.entries(semestres).reverse().map(([nome, lista]) => `
     <div class="semestre">
       <div class="semestre-topo"><h3>${nome}</h3><span>Encontros às ${[...new Set(lista.map(e => noPlural(e.dia)))].join(" e ")}</span></div>
@@ -197,16 +191,25 @@ function modoProfessor(ligar, senha) {
     if (ligar) { sessionStorage.setItem("inlaw-prof", "1"); sessionStorage.setItem("inlaw-senha", senha); }
     else { sessionStorage.removeItem("inlaw-prof"); sessionStorage.removeItem("inlaw-senha"); }
   } catch {}
-  atualizarBotaoProf();
-  desenharCalendarios();
+  ligar ? abrirPainel() : fecharPainel();
 }
 
-function atualizarBotaoProf() {
-  const botao = $("btn-prof");
-  const logado = document.body.classList.contains("prof");
-  botao.textContent = logado ? "Sair da área do professor" : "Área do professor";
-  botao.onclick = logado ? () => modoProfessor(false) : pedirSenha;
+// Painel da área do professor (abre por cima do site)
+function abrirPainel() {
+  $("area-professor").hidden = false;
+  document.body.classList.add("painel-aberto");
+  desenharCalendarios();
 }
+function fecharPainel() {
+  $("area-professor").hidden = true;
+  document.body.classList.remove("painel-aberto");
+}
+
+// Ícone de pessoa na barra do topo
+$("btn-prof").onclick = () => document.body.classList.contains("prof") ? abrirPainel() : pedirSenha();
+$("fechar-painel").onclick = fecharPainel;
+$("sair-prof").onclick = () => modoProfessor(false);
+$("exportar-tudo").onclick = () => exportarPlanilha(URL_PLANILHA ? ENCONTROS.map(e => e.data) : Object.keys(lerChamadasLocais()).sort());
 
 function pedirSenha() {
   abrir(`
@@ -228,7 +231,6 @@ function pedirSenha() {
     }
     modal.close();
     modoProfessor(true, senha);
-    $("encontros").scrollIntoView({ behavior: "smooth" });
   };
 }
 
@@ -284,7 +286,7 @@ const presencas = {
 let atualizacaoAoVivo = null;   // recarrega a lista enquanto a chamada está aberta
 modal.addEventListener("close", () => {
   clearInterval(atualizacaoAoVivo);
-  if (document.body.classList.contains("prof")) desenharCalendarios();
+  if (!$("area-professor").hidden) desenharCalendarios();
 });
 
 function abrirChamada(data) {
@@ -476,8 +478,6 @@ async function exportarPlanilha(datas) {
 
 // ---------- Ao carregar a página ----------
 try { if (sessionStorage.getItem("inlaw-prof") === "1") document.body.classList.add("prof"); } catch {}
-atualizarBotaoProf();
-desenharCalendarios();
 
 const dataDaPresenca = new URLSearchParams(location.search).get("presenca");
 if (dataDaPresenca) paginaDoAluno(dataDaPresenca);
