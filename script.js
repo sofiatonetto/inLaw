@@ -20,6 +20,7 @@ const MEMBROS = [
 // Encontros (aparecem só na Área do professor): data (ano-mês-dia) e, se quiser, o tema.
 // Para cada novo encontro, copie uma linha e troque a data.
 const ENCONTROS = [
+  { data: "2026-10-28", tema: "Teste" },
   { data: "2026-11-09", tema: "" },
 ];
 
