@@ -35,6 +35,10 @@ const ENCONTROS = [
 // e cole aqui o código que aparecer.
 const HASH_SENHA = "2728e8ede69eded5f5930e935f6fec08617d9659772642ecd39d2554d62dbfed";
 
+// Chamada por QR code: cole aqui o link do "App da Web" da Planilha Google
+// (passo a passo no arquivo LEIA-ME-chamada.txt). Vazio = chamada só neste aparelho.
+const URL_PLANILHA = "";
+
 // Fotos usadas na galeria se o site não conseguir ler o GitHub
 const FOTOS_PADRAO = [
   "ii-inlaw-experience.jpg",
@@ -45,14 +49,42 @@ const FOTOS_PADRAO = [
   "visita-escola-vale-veneto.jpg",
 ];
 
-// Posts de exemplo do blog (aparecem enquanto a pasta blog/ estiver vazia)
+// Posts do blog que já estão no site (os da pasta blog/ do GitHub aparecem junto, mais novos primeiro)
 const POSTS_EXEMPLO = [
-  { titulo: "Coordenador de Proteção de Dados", serie: "As Profissões do Futuro!", autor: "InLaw", data: "", capa: "",
-    corpo: "O **DPO** (Data Protection Officer) é quem garante que uma empresa trate os dados pessoais de acordo com a LGPD.\n\nTexto completo em breve." },
-  { titulo: "LawTechs - LegalTechs", serie: "As Profissões do Futuro!", autor: "InLaw", data: "", capa: "",
-    corpo: "Empresas que usam tecnologia para resolver problemas jurídicos: automação de documentos, jurimetria, gestão de processos e muito mais.\n\nTexto completo em breve." },
-  { titulo: "Marketing Jurídico", serie: "As Profissões do Futuro!", autor: "InLaw", data: "", capa: "",
-    corpo: "Como advogados e escritórios podem se comunicar nas redes respeitando as regras da OAB.\n\nTexto completo em breve." },
+  { titulo: "Coordenador de Proteção de Dados", serie: "As Profissões do Futuro!", autor: "InLaw", data: "13/06/2023", capa: "",
+    corpo: `Vamos descobrir a importância deste profissional? 🎯
+
+O Coordenador(a) de Proteção de Dados é um profissional responsável por cuidar de questões referentes à proteção de dados da organização e de seus clientes.
+
+Possui uma área de influência muito relevante, passando por todo o ciclo do tratamento dos dados, desde a atividade preventiva, passando pela fase de orientação e monitoramento, até chegar na conclusão.
+
+Além disso, auxilia na implementação e estruturação de programas de compliance.
+
+Dentre as suas principais atribuições estão: coordenar equipe de segurança da informação e de gerenciamento de redes, monitorar ambiente e tomar decisões estratégicas, conduzir a implementação de novas soluções tecnológicas, elaborar, implementar e revisar políticas de segurança da informação e de privacidade e proteção de dados pessoais.
+
+Sendo assim, este profissional é fundamental para as organizações que fazem algum tipo de tratamento de dados, para que seja feita de forma correta e efetiva.
+
+E aí, já conhecia essa profissão? Comenta lá no nosso Instagram!` },
+  { titulo: "LawTechs - LegalTechs", serie: "As Profissões do Futuro!", autor: "InLaw", data: "12/06/2023", capa: "",
+    corpo: `Vamos conhecer as famosas LawTechs - LegalTechs? 🔎
+
+As LawTechs ou LegalTechs são startups que estão transformando o setor jurídico!
+
+Além de auxiliarem nas questões burocráticas dos processos, aumentam a eficiência e melhoram a gestão de escritórios e órgãos públicos, facilitando a vida dos profissionais do Direito e, consequentemente, da população.
+
+Com o uso da IA (Inteligência Artificial) é possível a automação de tarefas, análise de dados e resolução de problemas por meio de plataformas jurídicas, permitindo uma maior agilidade ao sistema Judiciário.
+
+E você, já conhece ou utiliza alguma LegalTech?` },
+  { titulo: "Marketing Jurídico", serie: "As Profissões do Futuro!", autor: "InLaw", data: "09/06/2023", capa: "",
+    corpo: `Você sabe qual a função desse profissional? 🔎
+
+O profissional de marketing jurídico é responsável por desenvolver e implementar estratégias de marketing para escritórios de advocacia, departamentos jurídicos ou profissionais autônomos do ramo jurídico. Seu objetivo principal é promover a marca, os serviços e a imagem do escritório ou profissional, atraindo e retendo clientes.
+
+O marketing jurídico difere um pouco do marketing tradicional, devido às restrições éticas e regulamentações impostas pela profissão jurídica.
+
+Além disso, o profissional de marketing jurídico também pode auxiliar na criação e gestão do relacionamento com os clientes, desenvolvendo estratégias de fidelização, acompanhamento pós-atendimento, solicitação de feedback e gerenciamento de reclamações.
+
+E aí, já sabia dessa profissão inovadora?` },
 ];
 
 
@@ -132,7 +164,7 @@ function desenharCalendarios() {
           <div class="mes">${e.dia.toLocaleDateString("pt-BR", { month: "long" })}</div>
           <div class="dia"><b>${e.dia.getDate()}</b><small>${diaDaSemana(e.dia)}</small></div>
           <div class="tema">${e.tema}</div>
-          <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${contarPresentes(e.data)} presentes</small></button>
+          <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${contarPresentes(e.data) ?? "abrir"}${contarPresentes(e.data) === null ? "" : " presentes"}</small></button>
         </div>`;
   };
 
@@ -149,16 +181,22 @@ function desenharCalendarios() {
 
 
 // ---------- Área do professor ----------
-// Obs.: a senha afasta visitantes comuns, mas não é um login de verdade.
+// Obs.: sem a planilha, a senha só afasta visitantes comuns. Com a planilha, a lista de
+// presentes só é entregue a quem manda a senha certa.
 async function sha256(texto) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
   return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 window.gerarHash = async texto => { const h = await sha256(texto); console.log(h); return h; };
 
-function modoProfessor(ligar) {
+const senhaProf = () => { try { return sessionStorage.getItem("inlaw-senha") || ""; } catch { return ""; } };
+
+function modoProfessor(ligar, senha) {
   document.body.classList.toggle("prof", ligar);
-  try { ligar ? sessionStorage.setItem("inlaw-prof", "1") : sessionStorage.removeItem("inlaw-prof"); } catch {}
+  try {
+    if (ligar) { sessionStorage.setItem("inlaw-prof", "1"); sessionStorage.setItem("inlaw-senha", senha); }
+    else { sessionStorage.removeItem("inlaw-prof"); sessionStorage.removeItem("inlaw-senha"); }
+  } catch {}
   atualizarBotaoProf();
   desenharCalendarios();
 }
@@ -183,28 +221,79 @@ function pedirSenha() {
 
   $("form-login").onsubmit = async ev => {
     ev.preventDefault();
-    if (await sha256($("senha").value) !== HASH_SENHA) {
+    const senha = $("senha").value;
+    if (await sha256(senha) !== HASH_SENHA) {
       $("erro-login").textContent = "Senha incorreta.";
       return;
     }
     modal.close();
-    modoProfessor(true);
+    modoProfessor(true, senha);
     $("encontros").scrollIntoView({ behavior: "smooth" });
   };
 }
 
 
-// ---------- Chamada ----------
-// As presenças ficam salvas neste aparelho/navegador. Exporte a planilha ao fim de cada encontro.
+// ---------- Onde as presenças ficam ----------
+// Com URL_PLANILHA: na Planilha Google (alunos respondem pelo celular via QR code).
+// Sem URL_PLANILHA: neste aparelho/navegador (exporte a planilha ao fim de cada encontro).
 const CHAVE_CHAMADAS = "inlaw-chamadas";
-const lerChamadas = () => lerJSON(CHAVE_CHAMADAS, {});
-const salvarChamadas = chamadas => salvarJSON(CHAVE_CHAMADAS, chamadas);
-const contarPresentes = data => (lerChamadas()[data] || []).length;
+const lerChamadasLocais = () => lerJSON(CHAVE_CHAMADAS, {});
+const contarPresentes = data => URL_PLANILHA ? (cachePresentes[data] ?? null) : (lerChamadasLocais()[data] || []).length;
+const cachePresentes = {};
+const horaAgora = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+async function enviarPlanilha(dados) {
+  // text/plain evita bloqueio de CORS no Apps Script
+  const r = await fetch(URL_PLANILHA, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) });
+  return r.json();
+}
+
+const presencas = {
+  async listar(data) {
+    if (!URL_PLANILHA) return lerChamadasLocais()[data] || [];
+    const r = await fetch(`${URL_PLANILHA}?data=${data}&senha=${encodeURIComponent(senhaProf())}`).then(r => r.json());
+    if (!r.ok) throw new Error(r.erro);
+    cachePresentes[data] = r.presentes.length;
+    return r.presentes;
+  },
+  async registrar(data, nome, ra, comoProfessor) {
+    if (!URL_PLANILHA) {
+      const todas = lerChamadasLocais();
+      todas[data] ||= [];
+      if (todas[data].some(p => p.ra === ra)) return { ok: false, erro: `O RA ${ra} já está na chamada deste encontro.` };
+      const hora = horaAgora();
+      todas[data].push({ nome, ra, hora });
+      salvarJSON(CHAVE_CHAMADAS, todas);
+      return { ok: true, hora };
+    }
+    return enviarPlanilha({ acao: "presenca", data, nome, ra, senha: comoProfessor ? senhaProf() : "" });
+  },
+  async remover(data, ra) {
+    if (!URL_PLANILHA) {
+      const todas = lerChamadasLocais();
+      todas[data] = (todas[data] || []).filter(p => p.ra !== ra);
+      salvarJSON(CHAVE_CHAMADAS, todas);
+      return { ok: true };
+    }
+    return enviarPlanilha({ acao: "remover", data, ra, senha: senhaProf() });
+  },
+};
+
+
+// ---------- Chamada (tela do professor) ----------
+let atualizacaoAoVivo = null;   // recarrega a lista enquanto a chamada está aberta
+modal.addEventListener("close", () => {
+  clearInterval(atualizacaoAoVivo);
+  if (document.body.classList.contains("prof")) desenharCalendarios();
+});
 
 function abrirChamada(data) {
   abrir(`
     <div class="chamada">
-      <h1>Chamada · ${dataBR(data)}</h1>
+      <div class="chamada-topo">
+        <h1>Chamada · ${dataBR(data)}</h1>
+        <button class="acao" id="c-qr">Mostrar QR code</button>
+      </div>
       <form id="form-chamada" autocomplete="off">
         <input id="c-nome" placeholder="Nome completo" required>
         <input id="c-ra" placeholder="RA" inputmode="numeric" required>
@@ -225,49 +314,42 @@ function abrirChamada(data) {
   const campoNome = $("c-nome"), campoRA = $("c-ra"), aviso = $("c-aviso");
   let removerQuem = null;   // pede um segundo clique no × antes de remover
 
-  function mostrarLista() {
-    const presentes = lerChamadas()[data] || [];
-    $("c-total").textContent = presentes.length;
-    $("c-lista").innerHTML = presentes.map((p, i) => `
+  async function mostrarLista() {
+    let lista;
+    try { lista = await presencas.listar(data); }
+    catch (erro) { aviso.textContent = "Não foi possível carregar a lista: " + erro.message; return; }
+    if (!$("c-lista")) return;   // a janela já foi fechada
+
+    $("c-total").textContent = lista.length;
+    $("c-lista").innerHTML = lista.map((p, i) => `
       <tr>
         <td>${i + 1}</td><td>${escapar(p.nome)}</td><td>${escapar(p.ra)}</td><td>${p.hora}</td>
-        <td><button aria-label="Remover ${escapar(p.nome)}" data-i="${i}">×</button></td>
+        <td><button aria-label="Remover ${escapar(p.nome)}" data-ra="${escapar(p.ra)}" data-nome="${escapar(p.nome)}">×</button></td>
       </tr>`).join("");
 
     document.querySelectorAll("#c-lista button").forEach(botao => {
-      botao.onclick = () => {
-        const pessoa = presentes[botao.dataset.i];
-        if (removerQuem !== pessoa.ra) {
-          removerQuem = pessoa.ra;
-          aviso.textContent = `Clique no × de novo para remover ${pessoa.nome}.`;
+      botao.onclick = async () => {
+        if (removerQuem !== botao.dataset.ra) {
+          removerQuem = botao.dataset.ra;
+          aviso.textContent = `Clique no × de novo para remover ${botao.dataset.nome}.`;
           return;
         }
-        const chamadas = lerChamadas();
-        chamadas[data].splice(botao.dataset.i, 1);
-        salvarChamadas(chamadas);
         removerQuem = null;
         aviso.textContent = "";
+        await presencas.remover(data, botao.dataset.ra);
         mostrarLista();
       };
     });
   }
 
-  $("form-chamada").onsubmit = ev => {
+  $("form-chamada").onsubmit = async ev => {
     ev.preventDefault();
     const nome = campoNome.value.trim().replace(/\s+/g, " ");
     const ra = campoRA.value.trim();
     if (!nome || !ra) return;
 
-    const chamadas = lerChamadas();
-    chamadas[data] ||= [];
-    if (chamadas[data].some(p => p.ra === ra)) {
-      aviso.textContent = `O RA ${ra} já está na chamada deste encontro.`;
-      return;
-    }
-    const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    chamadas[data].push({ nome, ra, hora });
-    salvarChamadas(chamadas);
-
+    const r = await presencas.registrar(data, nome, ra, true);
+    if (!r.ok) { aviso.textContent = r.erro; return; }
     aviso.textContent = "";
     campoNome.value = "";
     campoRA.value = "";
@@ -275,27 +357,109 @@ function abrirChamada(data) {
     mostrarLista();
   };
 
+  $("c-qr").onclick = () => mostrarQR(data);
   $("c-exportar").onclick = () => exportarPlanilha([data]);
-  $("c-exportar-todos").onclick = () => exportarPlanilha(Object.keys(lerChamadas()).sort());
-  modal.addEventListener("close", desenharCalendarios, { once: true });   // atualiza o nº de presentes
+  $("c-exportar-todos").onclick = () => exportarPlanilha(URL_PLANILHA ? ENCONTROS.map(e => e.data) : Object.keys(lerChamadasLocais()).sort());
 
   mostrarLista();
+  if (URL_PLANILHA) atualizacaoAoVivo = setInterval(mostrarLista, 5000);
   campoNome.focus();
 }
 
-// Gera a planilha .csv (separada por ; e com acentos certos para abrir direto no Excel)
-function exportarPlanilha(datas) {
-  const chamadas = lerChamadas();
+
+// ---------- QR code para projetar na tela ----------
+function mostrarQR(data) {
+  clearInterval(atualizacaoAoVivo);
+  const link = `${location.origin}${location.pathname}?presenca=${data}`;
+
+  if (!URL_PLANILHA) {
+    abrir(`<div class="qr-tela"><h1>Falta ligar a planilha</h1>
+      <p class="qr-dica">Para os alunos responderem pelo celular, as respostas precisam ir para a Planilha Google.
+      Siga o passo a passo do arquivo LEIA-ME-chamada.txt e cole o link em URL_PLANILHA, no topo do script.js.</p>
+      <button class="acao" id="qr-voltar">Voltar para a chamada</button></div>`);
+    $("qr-voltar").onclick = () => abrirChamada(data);
+    return;
+  }
+
+  abrir(`
+    <div class="qr-tela">
+      <p class="qr-dica">Aponte a câmera do celular para registrar sua presença</p>
+      <h1>Chamada · ${dataBR(data)}</h1>
+      <div id="qr-codigo"></div>
+      <p class="qr-total"><b id="qr-total">${cachePresentes[data] ?? 0}</b> presentes</p>
+      <button class="acao claro" id="qr-voltar">Voltar para a lista</button>
+    </div>`);
+  new QRCode($("qr-codigo"), { text: link, width: 340, height: 340, colorDark: "#3A1A5C", colorLight: "#ffffff" });
+  $("qr-voltar").onclick = () => abrirChamada(data);
+
+  const atualizarTotal = async () => {
+    try { const lista = await presencas.listar(data); if ($("qr-total")) $("qr-total").textContent = lista.length; } catch {}
+  };
+  atualizarTotal();
+  atualizacaoAoVivo = setInterval(atualizarTotal, 5000);
+}
+
+
+// ---------- Página do aluno (aberta pelo QR code) ----------
+function paginaDoAluno(data) {
+  const chave = "inlaw-respondi-" + data;
+  const jaRespondeu = lerJSON(chave, null);
+
+  abrir(`
+    <form class="login presenca" id="form-presenca" autocomplete="on">
+      <img src="logo.png" alt="Selo InLaw" class="presenca-logo">
+      <h1>Presença · ${dataBR(data)}</h1>
+      <p>Encontro do InLaw – Laboratório de Inovação e Direito</p>
+      <div id="presenca-campos">
+        <input id="p-nome" name="name" placeholder="Nome completo" autocomplete="name" required>
+        <input id="p-ra" placeholder="RA" inputmode="numeric" required>
+        <p class="aviso" id="p-aviso" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
+        <button id="p-enviar">Registrar presença</button>
+      </div>
+    </form>`);
+
+  const concluido = hora => {
+    $("presenca-campos").innerHTML = `<p class="presenca-ok">✓ Presença registrada${hora ? " às " + hora : ""}.<br>Bom encontro!</p>`;
+  };
+  if (jaRespondeu) return concluido(jaRespondeu.hora);
+
+  $("form-presenca").onsubmit = async ev => {
+    ev.preventDefault();
+    const nome = $("p-nome").value.trim().replace(/\s+/g, " ");
+    const ra = $("p-ra").value.trim();
+    if (!nome || !ra) return;
+
+    $("p-enviar").disabled = true;
+    $("p-enviar").textContent = "Enviando…";
+    try {
+      const r = await presencas.registrar(data, nome, ra, false);
+      if (!r.ok) throw new Error(r.erro);
+      salvarJSON(chave, { hora: r.hora });
+      concluido(r.hora);
+    } catch (erro) {
+      $("p-aviso").textContent = erro.message || "Não foi possível enviar. Tente de novo.";
+      $("p-enviar").disabled = false;
+      $("p-enviar").textContent = "Registrar presença";
+    }
+  };
+  $("p-nome").focus();
+}
+
+
+// ---------- Planilha exportada (.csv, abre no Excel) ----------
+async function exportarPlanilha(datas) {
   const celula = v => `"${String(v).replace(/"/g, '""')}"`;
   const linha = valores => valores.map(celula).join(";");
 
   const linhas = [linha(["Data do encontro", "Nº", "Nome", "RA", "Horário da resposta"])];
-  datas.forEach(data => {
-    const presentes = chamadas[data] || [];
-    presentes.forEach((p, i) => linhas.push(linha([dataBR(data), i + 1, p.nome, p.ra, p.hora])));
-    linhas.push(linha([dataBR(data), "", "TOTAL DE PRESENTES", presentes.length, ""]));
+  for (const data of datas) {
+    let lista = [];
+    try { lista = await presencas.listar(data); } catch {}
+    if (URL_PLANILHA && datas.length > 1 && !lista.length) continue;   // pula encontros sem chamada
+    lista.forEach((p, i) => linhas.push(linha([dataBR(data), i + 1, p.nome, p.ra, p.hora])));
+    linhas.push(linha([dataBR(data), "", "TOTAL DE PRESENTES", lista.length, ""]));
     linhas.push("");
-  });
+  }
 
   const arquivo = new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const link = document.createElement("a");
@@ -309,10 +473,14 @@ function exportarPlanilha(datas) {
   URL.revokeObjectURL(link.href);
 }
 
-// Ao carregar: continua logado se o professor já entrou nesta aba
+
+// ---------- Ao carregar a página ----------
 try { if (sessionStorage.getItem("inlaw-prof") === "1") document.body.classList.add("prof"); } catch {}
 atualizarBotaoProf();
 desenharCalendarios();
+
+const dataDaPresenca = new URLSearchParams(location.search).get("presenca");
+if (dataDaPresenca) paginaDoAluno(dataDaPresenca);
 
 
 // ---------- Galeria em movimento ----------
@@ -456,5 +624,5 @@ fetch(urlGitHub(PASTA_BLOG))
       .sort((a, b) => b.name.localeCompare(a.name))   // mais novos primeiro
       .map(a => fetch(`${PASTA_BLOG}/${a.name}`).then(r => r.text()).then(t => lerPost(t, a.name)))
   ))
-  .then(posts => mostrarFeed(posts.length ? posts : POSTS_EXEMPLO))
+  .then(posts => mostrarFeed([...posts, ...POSTS_EXEMPLO]))
   .catch(() => mostrarFeed(POSTS_EXEMPLO));
