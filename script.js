@@ -30,7 +30,7 @@ const HASH_SENHA = "2728e8ede69eded5f5930e935f6fec08617d9659772642ecd39d2554d62d
 
 // Chamada por QR code: cole aqui o link do "App da Web" da Planilha Google
 // (passo a passo no arquivo LEIA-ME-chamada.txt). Vazio = chamada só neste aparelho.
-const URL_PLANILHA = "";
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxiuVbWyOS2jt0B9xTC-FlqVvO0IG-48Gz2-DeEPaQWU9HBi5DP4goZdwkyrHka0SlhKA/exec";
 
 // Fotos usadas na galeria se o site não conseguir ler o GitHub
 const FOTOS_PADRAO = [
