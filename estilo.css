@@ -100,7 +100,10 @@ body.prof .prof-icone{color:var(--laranja);opacity:1}
 .pubs .tipo{font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--roxo-medio)}
 .pubs h3{font-size:1.35rem;margin:2px 0}
 .pubs p{color:var(--cinza);font-size:.96rem;max-width:70ch}
-@media(max-width:700px){.pubs li{grid-template-columns:1fr;gap:6px}}
+.pubs li:has(.pub-foto){grid-template-columns:90px 1fr 200px}
+.pubs .pub-foto{width:200px;aspect-ratio:4/3;object-fit:cover;box-shadow:0 8px 20px rgba(58,26,92,.12)}
+.pubs .pub-foto.documento{object-fit:contain;background:#fff;padding:8px}
+@media(max-width:700px){.pubs li,.pubs li:has(.pub-foto){grid-template-columns:1fr;gap:6px}.pubs .pub-foto{width:100%;max-width:320px;margin-top:10px}}
 
 /* ===== Blog ===== */
 .roxa{background:var(--roxo);color:#fff}
@@ -162,7 +165,7 @@ body.prof .prof-icone{color:var(--laranja);opacity:1}
 .cal .abrir-chamada small{display:block;font-size:.68rem;letter-spacing:.1em;opacity:.8;margin-top:2px}
 .chamada{background:var(--creme);padding:clamp(24px,4vw,44px);max-height:92vh;overflow:auto;width:min(760px,94vw)}
 .chamada h1{font-size:clamp(1.5rem,3vw,2rem);margin-bottom:20px}
-.chamada form{display:grid;grid-template-columns:1fr 160px auto;gap:10px;margin-bottom:8px}
+.chamada form{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:8px}
 .chamada input{font:inherit;padding:12px 14px;border:1px solid var(--linha);background:#fff;width:100%}
 .chamada input:focus{outline:2px solid var(--laranja);border-color:transparent}
 .chamada form button,.chamada .acao{background:var(--roxo);color:#fff;padding:12px 20px;text-align:center}
@@ -212,9 +215,9 @@ body.painel-aberto{overflow:hidden}
 
 /* ===== Eventos ===== */
 .eventos{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
-.evento{display:grid;grid-template-columns:90px 1fr;background:#fff}
+.evento{display:grid;grid-template-columns:104px 1fr;background:#fff}
 .evento .data{background:var(--roxo);color:#fff;text-align:center;padding:22px 0;display:flex;flex-direction:column;justify-content:center}
-.evento .data b{font-family:var(--serif);font-size:2.2rem;line-height:1;font-weight:500}
+.evento .data b{font-family:var(--serif);font-size:clamp(1.5rem,2.2vw,2.2rem);white-space:nowrap;line-height:1;font-weight:500}
 .evento .data span{font-size:.74rem;letter-spacing:.2em;text-transform:uppercase}
 .evento.passado .data{background:var(--lilas);color:var(--roxo)}
 .evento div:last-child{padding:22px 24px}
