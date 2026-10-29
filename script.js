@@ -114,8 +114,9 @@ function abrir(html) {
 
 
 // ---------- Rodapé e membros ----------
-$("ano").textContent = new Date().getFullYear();
-$("membros").innerHTML = MEMBROS.map(nome => `<li>${nome}</li>`).join("");
+// (o "?." evita que o site trave se algum elemento não existir no index.html)
+$("ano")?.replaceChildren(String(new Date().getFullYear()));
+$("membros")?.replaceChildren(...MEMBROS.map(nome => Object.assign(document.createElement("li"), { textContent: nome })));
 
 
 // ---------- Menu: sublinha a seção que está na tela ----------
@@ -135,6 +136,7 @@ linksMenu.forEach(link => {
 
 // ---------- Encontros: mini calendários ----------
 function desenharCalendarios() {
+  if (!$("encontros")) return;
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
@@ -199,20 +201,23 @@ function modoProfessor(ligar, senha) {
 
 // Painel da área do professor (abre por cima do site)
 function abrirPainel() {
+  if (!$("area-professor")) return;
   $("area-professor").hidden = false;
   document.body.classList.add("painel-aberto");
   desenharCalendarios();
 }
 function fecharPainel() {
+  if (!$("area-professor")) return;
   $("area-professor").hidden = true;
   document.body.classList.remove("painel-aberto");
 }
 
 // Ícone de pessoa na barra do topo
-$("btn-prof").onclick = () => document.body.classList.contains("prof") ? abrirPainel() : pedirSenha();
-$("fechar-painel").onclick = fecharPainel;
-$("sair-prof").onclick = () => modoProfessor(false);
-$("exportar-tudo").onclick = () => exportarPlanilha(URL_PLANILHA ? ENCONTROS.map(e => e.data) : Object.keys(lerChamadasLocais()).sort());
+const aoClicar = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
+aoClicar("btn-prof", () => document.body.classList.contains("prof") ? abrirPainel() : pedirSenha());
+aoClicar("fechar-painel", fecharPainel);
+aoClicar("sair-prof", () => modoProfessor(false));
+aoClicar("exportar-tudo", () => exportarPlanilha(URL_PLANILHA ? ENCONTROS.map(e => e.data) : Object.keys(lerChamadasLocais()).sort()));
 
 function pedirSenha() {
   abrir(`
@@ -289,7 +294,7 @@ const presencas = {
 let atualizacaoAoVivo = null;   // recarrega a lista enquanto a chamada está aberta
 modal.addEventListener("close", () => {
   clearInterval(atualizacaoAoVivo);
-  if (!$("area-professor").hidden) desenharCalendarios();
+  if ($("area-professor") && !$("area-professor").hidden) desenharCalendarios();
 });
 
 function abrirChamada(data) {
@@ -484,6 +489,7 @@ if (dataDaPresenca) paginaDoAluno(dataDaPresenca);
 // ---------- Galeria em movimento ----------
 function mostrarFotos(fotos) {
   const galeria = $("fotos");
+  if (!galeria) return;
   if (!fotos.length) {
     galeria.innerHTML = '<p class="vazio">As fotos aparecem aqui assim que forem adicionadas.</p>';
     return;
@@ -507,6 +513,9 @@ function mostrarFotos(fotos) {
     ? faixa(fotos.slice(0, meio)) + faixa(fotos.slice(meio), true)
     : faixa(fotos);
 
+  // se alguma foto da lista não existir no repositório, ela some em vez de aparecer quebrada
+  galeria.querySelectorAll("img").forEach(img => img.addEventListener("error", () => img.parentElement.remove()));
+
   galeria.querySelectorAll("button").forEach(botao => {
     botao.onclick = () => {
       const img = botao.querySelector("img");
@@ -518,7 +527,7 @@ function mostrarFotos(fotos) {
 const ehFotoDaGaleria = arq =>
   arq.type === "file" &&
   /\.(jpe?g|png|webp)$/i.test(arq.name) &&
-  !/^(logo|favicon|capa|encontro|aline|pedro|cartilha)\./i.test(arq.name);   // essas são usadas em outros lugares do site
+  !/^(favicon|icone|apple-touch-icon)|^(logo|capa|encontro|aline|pedro|cartilha)\./i.test(arq.name);   // essas são usadas em outros lugares do site
 
 fetch(urlGitHub(PASTA_FOTOS))
   .then(r => r.ok ? r.json() : Promise.reject())
@@ -574,6 +583,7 @@ function arteDoPost(p) {
 }
 
 function mostrarFeed(posts) {
+  if (!$("posts")) return;
   let filtro = "Todos";
   const series = ["Todos", ...new Set(posts.map(p => p.serie))];
 
@@ -605,7 +615,7 @@ function mostrarFeed(posts) {
         abrir(`<article class="leitura">
           <small>${[p.serie, p.autor, p.data].filter(Boolean).join(" · ")}</small>
           <h1>${p.titulo}</h1>
-          ${marked.parse(p.corpo)}
+          ${window.marked ? marked.parse(p.corpo) : p.corpo.split(/\n\n+/).map(par => `<p>${escapar(par)}</p>`).join("")}
         </article>`);
       };
     });
