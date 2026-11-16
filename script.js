@@ -1,33 +1,20 @@
-/* =========================================================
-   InLaw · script do site
-   Tudo o que você normalmente edita está nesta primeira parte.
-   ========================================================= */
-
-// GitHub: de onde o site lê as fotos da galeria, os posts do blog e os encontros (encontros.json)
 const GITHUB_USUARIO = "sofiatonetto";
 const GITHUB_REPO    = "inLaw";
 const BRANCH         = "main";
-const PASTA_FOTOS    = "";      // "" = fotos soltas na raiz do repositório
+const PASTA_FOTOS    = "";      
 const PASTA_BLOG     = "blog";
 
-// Membros ativos (um nome por item)
 const MEMBROS = [
   "Nome do Membro",
   "Outro Membro",
   "Mais um Membro",
 ];
 
-// Encontros (aparecem só na Área do professor).
-// Não precisa mais mexer aqui: o professor cria e exclui encontros pelo botão
-// "+ Novo encontro" na Área do professor, e eles ficam no arquivo encontros.json do GitHub.
-// Esta lista só é usada uma vez, para levar os encontros antigos para o encontros.json.
+
 const ENCONTROS = [
   { data: "2026-11-09", tema: "" },
 ];
 
-// Senha da área do professor (padrão: inlaw2026).
-// Para trocar: abra o site, aperte F12 > Console, digite gerarHash("nova-senha")
-// e cole aqui o código que aparecer.
 const HASH_SENHA = "2728e8ede69eded5f5930e935f6fec08617d9659772642ecd39d2554d62dbfed";
 
 // Chamada por QR code: cole aqui o link do "App da Web" da Planilha Google
