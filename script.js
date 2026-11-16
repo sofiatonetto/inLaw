@@ -17,8 +17,9 @@ const MEMBROS = [
   "Mais um Membro",
 ];
 
-// Encontros (aparecem só na Área do professor): data (ano-mês-dia) e, se quiser, o tema.
-// Para cada novo encontro, copie uma linha e troque a data.
+// Encontros (aparecem só na Área do professor).
+// Não precisa mais mexer aqui: o professor cria e exclui encontros pelo botão
+// "+ Novo encontro" na Área do professor. Os que estiverem nesta lista aparecem sempre.
 const ENCONTROS = [
   { data: "2026-11-09", tema: "" },
 ];
@@ -134,13 +135,69 @@ linksMenu.forEach(link => {
 });
 
 
+// ---------- Encontros criados pelo botão ----------
+// Ficam guardados neste navegador, junto com os da lista ENCONTROS do topo.
+// "ocultos" guarda os encontros da lista do topo que o professor excluiu pelo site.
+const CHAVE_ENCONTROS = "inlaw-encontros";
+const hojeISO = () => new Date().toLocaleDateString("sv-SE");   // 2026-11-16
+
+function encontrosGuardados() {
+  const g = lerJSON(CHAVE_ENCONTROS, {});
+  return { criados: Array.isArray(g.criados) ? g.criados : [], ocultos: Array.isArray(g.ocultos) ? g.ocultos : [] };
+}
+
+function todosEncontros() {
+  const { criados, ocultos } = encontrosGuardados();
+  const porData = {};
+  [...ENCONTROS, ...criados].forEach(e => { if (e?.data) porData[e.data] = { data: e.data, tema: e.tema || "" }; });
+  return Object.values(porData).filter(e => !ocultos.includes(e.data)).sort((a, b) => a.data.localeCompare(b.data));
+}
+
+function criarEncontro(data, tema) {
+  const g = encontrosGuardados();
+  g.criados = g.criados.filter(e => e.data !== data).concat({ data, tema });
+  g.ocultos = g.ocultos.filter(d => d !== data);
+  salvarJSON(CHAVE_ENCONTROS, g);
+}
+
+function excluirEncontro(data) {
+  const g = encontrosGuardados();
+  g.criados = g.criados.filter(e => e.data !== data);
+  if (!g.ocultos.includes(data)) g.ocultos.push(data);
+  salvarJSON(CHAVE_ENCONTROS, g);
+}
+
+function novoEncontro() {
+  abrir(`
+    <form class="login" id="form-encontro">
+      <h1>Novo encontro</h1>
+      <p>Escolha a data. O tema é opcional.</p>
+      <input type="date" id="e-data" value="${hojeISO()}" required>
+      <input id="e-tema" placeholder="Tema (opcional)" maxlength="80" autocomplete="off">
+      <p class="aviso" id="e-aviso" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
+      <button>Criar encontro</button>
+    </form>`);
+  $("e-data").focus();
+
+  $("form-encontro").onsubmit = ev => {
+    ev.preventDefault();
+    const data = $("e-data").value;
+    const tema = $("e-tema").value.trim().replace(/\s+/g, " ");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { $("e-aviso").textContent = "Escolha uma data válida."; return; }
+    if (todosEncontros().some(e => e.data === data)) { $("e-aviso").textContent = `Já existe um encontro em ${dataBR(data)}.`; return; }
+    criarEncontro(data, tema);
+    modal.close();   // ao fechar, a lista de encontros é redesenhada
+  };
+}
+
+
 // ---------- Encontros: mini calendários ----------
 function desenharCalendarios() {
   if (!$("encontros")) return;
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
 
-  const encontros = ENCONTROS
+  const encontros = todosEncontros()
     .map(e => ({ ...e, dia: new Date(e.data + "T12:00") }))
     .sort((a, b) => a.dia - b.dia);
   const proximo = encontros.find(e => e.dia >= hoje);
@@ -161,12 +218,16 @@ function desenharCalendarios() {
         <div class="cal ${classe}">
           <div class="mes">${e.dia.toLocaleDateString("pt-BR", { month: "long" })}</div>
           <div class="dia"><b>${e.dia.getDate()}</b><small>${diaDaSemana(e.dia)}</small></div>
-          ${e.tema ? `<div class="tema">${e.tema}</div>` : ""}
+          ${e.tema ? `<div class="tema">${escapar(e.tema)}</div>` : ""}
           <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${contarPresentes(e.data) ?? "abrir"}${contarPresentes(e.data) === null ? "" : " presentes"}</small></button>
+          <button class="excluir-encontro" type="button" data-data="${e.data}">Excluir</button>
         </div>`;
   };
 
-  if (!encontros.length) { $("encontros").innerHTML = '<p class="vazio">Nenhum encontro cadastrado. Adicione as datas em ENCONTROS, no topo do script.js.</p>'; return; }
+  if (!encontros.length) {
+    $("encontros").innerHTML = '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
+    return;
+  }
   $("encontros").innerHTML = Object.entries(semestres).reverse().map(([nome, lista]) => `
     <div class="semestre">
       <div class="semestre-topo"><h3>${nome}</h3><span>Encontros às ${[...new Set(lista.map(e => noPlural(e.dia)))].join(" e ")}</span></div>
@@ -175,6 +236,20 @@ function desenharCalendarios() {
 
   document.querySelectorAll(".abrir-chamada").forEach(botao => {
     botao.onclick = () => abrirChamada(botao.dataset.data);
+  });
+
+  // Excluir pede um segundo clique para confirmar (as presenças já registradas não são apagadas)
+  document.querySelectorAll(".excluir-encontro").forEach(botao => {
+    botao.onclick = () => {
+      if (!botao.classList.contains("confirmar")) {
+        document.querySelectorAll(".excluir-encontro.confirmar").forEach(b => { b.classList.remove("confirmar"); b.textContent = "Excluir"; });
+        botao.classList.add("confirmar");
+        botao.textContent = "Clique de novo para excluir";
+        return;
+      }
+      excluirEncontro(botao.dataset.data);
+      desenharCalendarios();
+    };
   });
 }
 
@@ -217,7 +292,8 @@ const aoClicar = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
 aoClicar("btn-prof", () => document.body.classList.contains("prof") ? abrirPainel() : pedirSenha());
 aoClicar("fechar-painel", fecharPainel);
 aoClicar("sair-prof", () => modoProfessor(false));
-aoClicar("exportar-tudo", () => exportarPlanilha(URL_PLANILHA ? ENCONTROS.map(e => e.data) : Object.keys(lerChamadasLocais()).sort()));
+aoClicar("novo-encontro", novoEncontro);
+aoClicar("exportar-tudo", () => exportarPlanilha(URL_PLANILHA ? todosEncontros().map(e => e.data) : Object.keys(lerChamadasLocais()).sort()));
 
 function pedirSenha() {
   abrir(`
@@ -366,7 +442,7 @@ function abrirChamada(data) {
 
   $("c-qr").onclick = () => mostrarQR(data);
   $("c-exportar").onclick = () => exportarPlanilha([data]);
-  $("c-exportar-todos").onclick = () => exportarPlanilha(URL_PLANILHA ? ENCONTROS.map(e => e.data) : Object.keys(lerChamadasLocais()).sort());
+  $("c-exportar-todos").onclick = () => exportarPlanilha(URL_PLANILHA ? todosEncontros().map(e => e.data) : Object.keys(lerChamadasLocais()).sort());
 
   mostrarLista();
   if (URL_PLANILHA) atualizacaoAoVivo = setInterval(mostrarLista, 5000);
