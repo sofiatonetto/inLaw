@@ -3,7 +3,7 @@
    Tudo o que você normalmente edita está nesta primeira parte.
    ========================================================= */
 
-// GitHub: de onde o site lê as fotos da galeria e os posts do blog
+// GitHub: de onde o site lê as fotos da galeria, os posts do blog e os encontros (encontros.json)
 const GITHUB_USUARIO = "SEU-USUARIO";
 const GITHUB_REPO    = "SEU-REPOSITORIO";
 const BRANCH         = "main";
@@ -19,7 +19,8 @@ const MEMBROS = [
 
 // Encontros (aparecem só na Área do professor).
 // Não precisa mais mexer aqui: o professor cria e exclui encontros pelo botão
-// "+ Novo encontro" na Área do professor. Os que estiverem nesta lista aparecem sempre.
+// "+ Novo encontro" na Área do professor, e eles ficam no arquivo encontros.json do GitHub.
+// Esta lista só é usada uma vez, para levar os encontros antigos para o encontros.json.
 const ENCONTROS = [
   { data: "2026-11-09", tema: "" },
 ];
@@ -135,39 +136,167 @@ linksMenu.forEach(link => {
 });
 
 
-// ---------- Encontros criados pelo botão ----------
-// Ficam guardados neste navegador, junto com os da lista ENCONTROS do topo.
-// "ocultos" guarda os encontros da lista do topo que o professor excluiu pelo site.
-const CHAVE_ENCONTROS = "inlaw-encontros";
+// ---------- Estilos dos botões de encontro (ficam aqui para não depender do estilo.css) ----------
+document.head.insertAdjacentHTML("beforeend", `<style>
+  #form-encontro input { display:block; width:100%; box-sizing:border-box; margin:0 0 10px; }
+  .excluir-encontro { display:block; margin:8px auto 0; padding:2px 6px; background:none; border:0;
+    font:inherit; font-size:.78rem; color:#8a7a99; text-decoration:underline; cursor:pointer; }
+  .excluir-encontro:hover, .excluir-encontro.confirmar { color:#B3261E; }
+  .excluir-encontro.confirmar { font-weight:600; }
+  .aviso-encontros { background:#FFF4E5; border-left:4px solid #D9822B; padding:10px 14px; margin:0 0 24px; color:#5a3a12; }
+</style>`);
+
+
+// ---------- Encontros criados pelo botão "+ Novo encontro" ----------
+// Ficam no arquivo encontros.json do repositório do GitHub (o mesmo do blog e das fotos),
+// então aparecem em qualquer computador. Para salvar, cada computador do professor
+// precisa de uma "chave do GitHub", colada uma vez só (passo a passo: LEIA-ME-encontros.txt).
+// Se GITHUB_USUARIO e GITHUB_REPO não estiverem preenchidos, ficam só neste navegador.
+const ARQUIVO_ENCONTROS = "encontros.json";
+const CHAVE_ENCONTROS = "inlaw-encontros";   // reserva: encontros salvos só neste navegador
+const CHAVE_TOKEN = "inlaw-github-token";
 const hojeISO = () => new Date().toLocaleDateString("sv-SE");   // 2026-11-16
+
+let encontrosDoGitHub = null;   // lista lida do encontros.json (null = ainda não existe ou não deu para ler)
+let shaEncontros = null;        // "versão" do arquivo, que o GitHub exige para salvar por cima
+let situacaoEncontros = "";     // "github" | "sem-arquivo" | "erro" | "nao-configurado"
+
+const githubConfigurado = () => !/^SEU-/i.test(GITHUB_USUARIO) && !/^SEU-/i.test(GITHUB_REPO);
+const tokenGitHub = () => { try { return localStorage.getItem(CHAVE_TOKEN) || ""; } catch { return ""; } };
+const precisaDeChave = () => githubConfigurado() && !tokenGitHub();
+const urlEncontros = () => `https://api.github.com/repos/${GITHUB_USUARIO}/${GITHUB_REPO}/contents/${ARQUIVO_ENCONTROS}`;
+const cabecalhosGitHub = (comChave = true) => ({
+  Accept: "application/vnd.github+json",
+  ...(comChave && tokenGitHub() ? { Authorization: `Bearer ${tokenGitHub()}` } : {}),
+});
+const deBase64 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), c => c.charCodeAt(0)));
+const paraBase64 = texto => { let s = ""; new TextEncoder().encode(texto).forEach(b => { s += String.fromCharCode(b); }); return btoa(s); };
+
+const arrumarLista = lista => (Array.isArray(lista) ? lista : [])
+  .filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e?.data))
+  .map(e => ({ data: e.data, tema: String(e.tema || "").slice(0, 80) }))
+  .filter((e, i, todos) => todos.findIndex(x => x.data === e.data) === i)
+  .sort((a, b) => a.data.localeCompare(b.data));
 
 function encontrosGuardados() {
   const g = lerJSON(CHAVE_ENCONTROS, {});
   return { criados: Array.isArray(g.criados) ? g.criados : [], ocultos: Array.isArray(g.ocultos) ? g.ocultos : [] };
 }
 
-function todosEncontros() {
+function encontrosDesteNavegador() {
   const { criados, ocultos } = encontrosGuardados();
-  const porData = {};
-  [...ENCONTROS, ...criados].forEach(e => { if (e?.data) porData[e.data] = { data: e.data, tema: e.tema || "" }; });
-  return Object.values(porData).filter(e => !ocultos.includes(e.data)).sort((a, b) => a.data.localeCompare(b.data));
+  return arrumarLista([...criados, ...ENCONTROS].filter(e => !ocultos.includes(e?.data)));
 }
 
-function criarEncontro(data, tema) {
+const todosEncontros = () => encontrosDoGitHub ?? encontrosDesteNavegador();
+
+// Lê o encontros.json do GitHub
+async function carregarEncontros() {
+  if (!githubConfigurado()) { situacaoEncontros = "nao-configurado"; return; }
+  try {
+    const url = `${urlEncontros()}?ref=${BRANCH}&t=${Date.now()}`;
+    let r = await fetch(url, { headers: cabecalhosGitHub(), cache: "no-store" });
+    if (r.status === 401) r = await fetch(url, { headers: cabecalhosGitHub(false), cache: "no-store" });   // chave vencida: lê sem ela
+    if (r.status === 404) { encontrosDoGitHub = null; shaEncontros = null; situacaoEncontros = "sem-arquivo"; return; }
+    if (!r.ok) throw new Error();
+    const arquivo = await r.json();
+    encontrosDoGitHub = arrumarLista(JSON.parse(deBase64(arquivo.content)));
+    shaEncontros = arquivo.sha;
+    situacaoEncontros = "github";
+  } catch {
+    if (!encontrosDoGitHub) situacaoEncontros = "erro";
+  }
+}
+
+// Salva no GitHub: pega a versão mais nova, aplica a mudança e grava
+async function salvarNoGitHub(mudar, mensagem) {
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    await carregarEncontros();
+    if (situacaoEncontros === "erro") throw new Error("Não foi possível falar com o GitHub agora. Tente de novo.");
+    // na primeira vez (arquivo ainda não existe), leva junto os encontros que já existiam no site
+    const nova = arrumarLista(mudar(encontrosDoGitHub ?? encontrosDesteNavegador()));
+    const r = await fetch(urlEncontros(), {
+      method: "PUT",
+      headers: { ...cabecalhosGitHub(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: mensagem,
+        content: paraBase64(JSON.stringify(nova, null, 2) + "\n"),
+        branch: BRANCH,
+        ...(shaEncontros ? { sha: shaEncontros } : {}),
+      }),
+    });
+    if (r.ok) {
+      encontrosDoGitHub = nova;
+      shaEncontros = (await r.json()).content?.sha || null;
+      situacaoEncontros = "github";
+      return;
+    }
+    if (r.status === 409 || r.status === 422) continue;   // alguém salvou ao mesmo tempo: tenta de novo
+    if (r.status === 401) { esquecerChave(); throw new Error("A chave do GitHub venceu ou está errada. Tente de novo para colar uma nova."); }
+    if (r.status === 403 || r.status === 404) throw new Error("Esta chave do GitHub não tem permissão para salvar no repositório do site.");
+    throw new Error("O GitHub não respondeu. Tente de novo.");
+  }
+  throw new Error("Outra pessoa estava salvando ao mesmo tempo. Tente de novo.");
+}
+
+async function criarEncontro(data, tema) {
+  if (githubConfigurado()) return salvarNoGitHub(lista => [...lista, { data, tema }], `Novo encontro: ${dataBR(data)}`);
   const g = encontrosGuardados();
   g.criados = g.criados.filter(e => e.data !== data).concat({ data, tema });
   g.ocultos = g.ocultos.filter(d => d !== data);
   salvarJSON(CHAVE_ENCONTROS, g);
 }
 
-function excluirEncontro(data) {
+async function excluirEncontro(data) {
+  if (githubConfigurado()) return salvarNoGitHub(lista => lista.filter(e => e.data !== data), `Exclui encontro: ${dataBR(data)}`);
   const g = encontrosGuardados();
   g.criados = g.criados.filter(e => e.data !== data);
   if (!g.ocultos.includes(data)) g.ocultos.push(data);
   salvarJSON(CHAVE_ENCONTROS, g);
 }
 
+// ---------- Chave do GitHub (colada uma vez em cada computador) ----------
+function esquecerChave() { try { localStorage.removeItem(CHAVE_TOKEN); } catch {} }
+
+function pedirChaveGitHub(depois) {
+  abrir(`
+    <form class="login" id="form-chave" autocomplete="off">
+      <h1>Conectar ao GitHub</h1>
+      <p>Para criar e excluir encontros, este computador precisa da chave do GitHub do InLaw.
+      É só colar uma vez; o site lembra dela neste navegador.</p>
+      <input type="password" id="g-chave" placeholder="Cole a chave aqui (começa com github_pat_)" required>
+      <p class="aviso" id="g-aviso" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
+      <button id="g-salvar">Conectar</button>
+      ${tokenGitHub() ? '<p style="margin-top:14px"><button type="button" class="excluir-encontro" id="g-esquecer">Remover a chave deste computador</button></p>' : ""}
+    </form>`);
+  $("g-chave").focus();
+  if ($("g-esquecer")) $("g-esquecer").onclick = () => { esquecerChave(); modal.close(); };
+
+  $("form-chave").onsubmit = async ev => {
+    ev.preventDefault();
+    const chave = $("g-chave").value.trim();
+    $("g-salvar").disabled = true;
+    $("g-salvar").textContent = "Conferindo…";
+    try {
+      const r = await fetch(`https://api.github.com/repos/${GITHUB_USUARIO}/${GITHUB_REPO}`, {
+        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${chave}` }, cache: "no-store",
+      });
+      if (r.status === 401) throw new Error("Chave inválida ou vencida. Confira se copiou ela inteira.");
+      if (!r.ok) throw new Error("Esta chave não dá acesso ao repositório do site.");
+      const repo = await r.json();
+      if (repo.permissions && !repo.permissions.push) throw new Error("Esta chave só pode ler. Ela precisa da permissão Contents: Read and write.");
+      try { localStorage.setItem(CHAVE_TOKEN, chave); } catch {}
+      if (depois) depois(); else modal.close();
+    } catch (erro) {
+      $("g-aviso").textContent = erro.message || "Não foi possível conferir a chave. Tente de novo.";
+      $("g-salvar").disabled = false;
+      $("g-salvar").textContent = "Conectar";
+    }
+  };
+}
+
 function novoEncontro() {
+  if (precisaDeChave()) return pedirChaveGitHub(novoEncontro);
   abrir(`
     <form class="login" id="form-encontro">
       <h1>Novo encontro</h1>
@@ -175,18 +304,27 @@ function novoEncontro() {
       <input type="date" id="e-data" value="${hojeISO()}" required>
       <input id="e-tema" placeholder="Tema (opcional)" maxlength="80" autocomplete="off">
       <p class="aviso" id="e-aviso" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
-      <button>Criar encontro</button>
+      <button id="e-criar">Criar encontro</button>
     </form>`);
   $("e-data").focus();
 
-  $("form-encontro").onsubmit = ev => {
+  $("form-encontro").onsubmit = async ev => {
     ev.preventDefault();
     const data = $("e-data").value;
     const tema = $("e-tema").value.trim().replace(/\s+/g, " ");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { $("e-aviso").textContent = "Escolha uma data válida."; return; }
     if (todosEncontros().some(e => e.data === data)) { $("e-aviso").textContent = `Já existe um encontro em ${dataBR(data)}.`; return; }
-    criarEncontro(data, tema);
-    modal.close();   // ao fechar, a lista de encontros é redesenhada
+
+    $("e-criar").disabled = true;
+    $("e-criar").textContent = "Salvando…";
+    try {
+      await criarEncontro(data, tema);
+      modal.close();   // ao fechar, a lista de encontros é redesenhada
+    } catch (erro) {
+      $("e-aviso").textContent = erro.message || "Não foi possível salvar. Tente de novo.";
+      $("e-criar").disabled = false;
+      $("e-criar").textContent = "Criar encontro";
+    }
   };
 }
 
@@ -224,15 +362,23 @@ function desenharCalendarios() {
         </div>`;
   };
 
+  const aviso = {
+    "nao-configurado": '<p class="aviso-encontros">Atenção: os encontros estão salvos só neste navegador. Para aparecerem em todos os computadores, preencha GITHUB_USUARIO e GITHUB_REPO no topo do script.js.</p>',
+    "erro": '<p class="aviso-encontros">Não foi possível ler os encontros do GitHub agora. Confira a internet e abra a área do professor de novo.</p>',
+  }[situacaoEncontros] || "";
+
   if (!encontros.length) {
-    $("encontros").innerHTML = '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
+    $("encontros").innerHTML = aviso + '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
     return;
   }
-  $("encontros").innerHTML = Object.entries(semestres).reverse().map(([nome, lista]) => `
+  $("encontros").innerHTML = aviso + Object.entries(semestres).reverse().map(([nome, lista]) => `
     <div class="semestre">
       <div class="semestre-topo"><h3>${nome}</h3><span>Encontros às ${[...new Set(lista.map(e => noPlural(e.dia)))].join(" e ")}</span></div>
       <div class="calendarios">${lista.map(calendario).join("")}</div>
-    </div>`).join("");
+    </div>`).join("") + (tokenGitHub()
+      ? '<p class="chave-linha"><button type="button" class="excluir-encontro" id="trocar-chave">Chave do GitHub deste computador</button></p>'
+      : "");
+  if ($("trocar-chave")) $("trocar-chave").onclick = () => pedirChaveGitHub();
 
   document.querySelectorAll(".abrir-chamada").forEach(botao => {
     botao.onclick = () => abrirChamada(botao.dataset.data);
@@ -247,8 +393,12 @@ function desenharCalendarios() {
         botao.textContent = "Clique de novo para excluir";
         return;
       }
-      excluirEncontro(botao.dataset.data);
-      desenharCalendarios();
+      if (precisaDeChave()) return pedirChaveGitHub(() => { modal.close(); });
+      botao.disabled = true;
+      botao.textContent = "Excluindo…";
+      excluirEncontro(botao.dataset.data)
+        .then(desenharCalendarios)
+        .catch(erro => { botao.disabled = false; botao.textContent = erro.message || "Erro. Tente de novo."; botao.classList.remove("confirmar"); });
     };
   });
 }
@@ -279,7 +429,9 @@ function abrirPainel() {
   if (!$("area-professor")) return;
   $("area-professor").hidden = false;
   document.body.classList.add("painel-aberto");
-  desenharCalendarios();
+  if (githubConfigurado() && !encontrosDoGitHub) $("encontros").innerHTML = '<p class="vazio">Carregando encontros…</p>';
+  else desenharCalendarios();
+  carregarEncontros().then(desenharCalendarios);
 }
 function fecharPainel() {
   if (!$("area-professor")) return;
@@ -292,6 +444,10 @@ const aoClicar = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
 aoClicar("btn-prof", () => document.body.classList.contains("prof") ? abrirPainel() : pedirSenha());
 aoClicar("fechar-painel", fecharPainel);
 aoClicar("sair-prof", () => modoProfessor(false));
+if (!$("novo-encontro") && document.querySelector(".painel-acoes")) {
+  const botao = Object.assign(document.createElement("button"), { id: "novo-encontro", type: "button", className: "acao", textContent: "+ Novo encontro" });
+  document.querySelector(".painel-acoes").prepend(botao);
+}
 aoClicar("novo-encontro", novoEncontro);
 aoClicar("exportar-tudo", () => exportarPlanilha(URL_PLANILHA ? todosEncontros().map(e => e.data) : Object.keys(lerChamadasLocais()).sort()));
 
