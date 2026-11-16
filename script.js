@@ -4,8 +4,8 @@
    ========================================================= */
 
 // GitHub: de onde o site lê as fotos da galeria, os posts do blog e os encontros (encontros.json)
-const GITHUB_USUARIO = "SEU-USUARIO";
-const GITHUB_REPO    = "SEU-REPOSITORIO";
+const GITHUB_USUARIO = "sofiatonetto";
+const GITHUB_REPO    = "inLaw";
 const BRANCH         = "main";
 const PASTA_FOTOS    = "";      // "" = fotos soltas na raiz do repositório
 const PASTA_BLOG     = "blog";
