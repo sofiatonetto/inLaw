@@ -1,4 +1,3 @@
-
 const GITHUB_USUARIO = "sofiatonetto";
 const GITHUB_REPO    = "inLaw";
 const BRANCH         = "main";
@@ -83,12 +82,6 @@ E aí, já sabia dessa profissão inovadora?` },
 ];
 
 
-/* =========================================================
-   Daqui para baixo é o funcionamento do site.
-   ========================================================= */
-
-
-// ---------- Ajudantes ----------
 const $ = id => document.getElementById(id);
 const escapar = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // "Ána  SOUZA" -> "ana souza": usado para não contar a mesma pessoa duas vezes
@@ -182,9 +175,6 @@ document.head.insertAdjacentHTML("beforeend", `<style>
 </style>`);
 
 
-// ---------- Conversa com a Planilha Google ----------
-// Tudo vai por POST (nada sensível aparece em links). O professor entra com a senha uma vez
-// e recebe um "passe" que vale por 6 horas; a senha não fica guardada no navegador.
 const VERSAO_PLANILHA = 3;
 const passeProf = () => { try { return sessionStorage.getItem("inlaw-passe") || ""; } catch { return ""; } };
 
@@ -205,29 +195,61 @@ const comoProfessor = dados => planilha({ ...dados, token: passeProf() });
 
 
 // ---------- Encontros (guardados na planilha) ----------
-let encontros = null;   // null = ainda não carregou
+// A lista fica também na memória desta aba, para aparecer na hora; a planilha confirma em seguida.
+let encontros = lerSessao("inlaw-encontros-cache");   // null = ainda não carregou
 let erroEncontros = "";
+let avisoTemporario = "";
+
+function lerSessao(chave) { try { return JSON.parse(sessionStorage.getItem(chave)); } catch { return null; } }
+function salvarSessao(chave, valor) { try { sessionStorage.setItem(chave, JSON.stringify(valor)); } catch {} }
+
+function guardarEncontros(lista) {
+  encontros = lista;
+  salvarSessao("inlaw-encontros-cache", lista);
+}
+
+// mostra um aviso no topo do painel por alguns segundos
+function avisarNoPainel(texto) {
+  avisoTemporario = texto;
+  desenharCalendarios();
+  setTimeout(() => { if (avisoTemporario === texto) { avisoTemporario = ""; desenharCalendarios(); } }, 6000);
+}
+
+async function receberEncontros(r) {
+  if (!r.migrado) {   // primeira vez: leva os encontros antigos do site para a planilha
+    const antigos = [...ENCONTROS, ...(lerJSON("inlaw-encontros", {}).criados || [])].filter(e => dataValida(e?.data));
+    r = await comoProfessor({ acao: "migrarEncontros", lista: antigos });
+    if (!r.ok) throw new Error(r.erro);
+  }
+  guardarEncontros(r.encontros);
+  erroEncontros = "";
+}
 
 async function carregarEncontros() {
   try {
-    let r = await comoProfessor({ acao: "encontros" });
+    const r = await comoProfessor({ acao: "encontros" });
     if (!r.ok) throw new Error(r.erro);
-    if (!r.migrado) {   // primeira vez: leva os encontros antigos do site para a planilha
-      const antigos = [...ENCONTROS, ...(lerJSON("inlaw-encontros", {}).criados || [])].filter(e => dataValida(e?.data));
-      r = await comoProfessor({ acao: "migrarEncontros", lista: antigos });
-      if (!r.ok) throw new Error(r.erro);
-    }
-    encontros = r.encontros;
-    erroEncontros = "";
+    await receberEncontros(r);
   } catch (erro) {
-    erroEncontros = erro.message;
+    if (!encontros) erroEncontros = erro.message;   // se já tem a lista na tela, só mantém
   }
 }
 
-async function mudarEncontros(dados) {
-  const r = await comoProfessor(dados);
-  if (!r.ok) throw new Error(r.erro || "A planilha não aceitou a mudança.");
-  encontros = r.encontros;
+// Muda na tela na hora; se a planilha recusar, desfaz e avisa
+async function mudarEncontros(dados, mudancaNaTela) {
+  const antes = encontros || [];
+  guardarEncontros(mudancaNaTela(antes));
+  desenharCalendarios();
+  try {
+    const r = await comoProfessor(dados);
+    if (!r.ok) throw new Error(r.erro || "A planilha não aceitou a mudança.");
+    guardarEncontros(r.encontros);
+  } catch (erro) {
+    guardarEncontros(antes);
+    avisarNoPainel(erro.message);
+    return;
+  }
+  desenharCalendarios();
 }
 
 function novoEncontro() {
@@ -242,23 +264,14 @@ function novoEncontro() {
     </form>`);
   $("e-data").focus();
 
-  $("form-encontro").onsubmit = async ev => {
+  $("form-encontro").onsubmit = ev => {
     ev.preventDefault();
     const data = $("e-data").value;
     const tema = $("e-tema").value.trim().replace(/\s+/g, " ");
     if (!dataValida(data)) { $("e-aviso").textContent = "Escolha uma data válida."; return; }
     if ((encontros || []).some(e => e.data === data)) { $("e-aviso").textContent = `Já existe um encontro em ${dataBR(data)}.`; return; }
-
-    $("e-criar").disabled = true;
-    $("e-criar").textContent = "Salvando…";
-    try {
-      await mudarEncontros({ acao: "encontro", data, tema });
-      modal.close();   // ao fechar, a lista de encontros é redesenhada
-    } catch (erro) {
-      $("e-aviso").textContent = erro.message;
-      $("e-criar").disabled = false;
-      $("e-criar").textContent = "Criar encontro";
-    }
+    modal.close();
+    mudarEncontros({ acao: "encontro", data, tema }, lista => [...lista, { data, tema, salvando: true }]);
   };
 }
 
@@ -270,6 +283,7 @@ function desenharCalendarios() {
     $("encontros").innerHTML = `<p class="aviso-encontros">${escapar(erroEncontros)}</p>`;
     return;
   }
+  const aviso = avisoTemporario ? `<p class="aviso-encontros">${escapar(avisoTemporario)}</p>` : "";
   if (!encontros) { $("encontros").innerHTML = '<p class="vazio">Carregando encontros…</p>'; return; }
 
   const hoje = new Date();
@@ -298,22 +312,24 @@ function desenharCalendarios() {
           <div class="mes">${e.dia.toLocaleDateString("pt-BR", { month: "long" })}</div>
           <div class="dia"><b>${e.dia.getDate()}</b><small>${diaDaSemana(e.dia)}</small></div>
           ${e.tema ? `<div class="tema">${escapar(e.tema)}</div>` : ""}
-          <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${total === undefined ? "abrir" : total + " presentes"}</small></button>
-          <button class="excluir-encontro" type="button" data-data="${e.data}">Excluir</button>
+          ${e.salvando
+            ? '<button class="abrir-chamada" disabled>Salvando…<small>aguarde</small></button>'
+            : `<button class="abrir-chamada" data-data="${e.data}">Chamada<small>${total === undefined ? "abrir" : total + " presentes"}</small></button>
+          <button class="excluir-encontro" type="button" data-data="${e.data}">Excluir</button>`}
         </div>`;
   };
 
   if (!lista.length) {
-    $("encontros").innerHTML = '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
+    $("encontros").innerHTML = aviso + '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
     return;
   }
-  $("encontros").innerHTML = Object.entries(semestres).reverse().map(([nome, doSemestre]) => `
+  $("encontros").innerHTML = aviso + Object.entries(semestres).reverse().map(([nome, doSemestre]) => `
     <div class="semestre">
       <div class="semestre-topo"><h3>${nome}</h3><span>Encontros às ${[...new Set(doSemestre.map(e => noPlural(e.dia)))].join(" e ")}</span></div>
       <div class="calendarios">${doSemestre.map(calendario).join("")}</div>
     </div>`).join("");
 
-  document.querySelectorAll(".abrir-chamada").forEach(botao => {
+  document.querySelectorAll(".abrir-chamada[data-data]").forEach(botao => {
     botao.onclick = () => abrirChamada(botao.dataset.data);
   });
 
@@ -326,21 +342,24 @@ function desenharCalendarios() {
         botao.textContent = "Clique de novo para excluir";
         return;
       }
-      botao.disabled = true;
-      botao.textContent = "Excluindo…";
-      mudarEncontros({ acao: "excluirEncontro", data: botao.dataset.data })
-        .then(desenharCalendarios)
-        .catch(erro => { botao.disabled = false; botao.textContent = erro.message; botao.classList.remove("confirmar"); });
+      const data = botao.dataset.data;
+      mudarEncontros({ acao: "excluirEncontro", data }, lista => lista.filter(e => e.data !== data));
     };
   });
 }
 
 
 // ---------- Área do professor ----------
-function entrarNoModoProfessor(passe) {
-  try { sessionStorage.setItem("inlaw-passe", passe); } catch {}
+async function entrarNoModoProfessor(r) {
+  try { sessionStorage.setItem("inlaw-passe", r.token); } catch {}
   document.body.classList.add("prof");
-  abrirPainel();
+  if (Array.isArray(r.encontros)) {   // a planilha já mandou os encontros junto com o login
+    abrirPainel(false);
+    try { await receberEncontros(r); } catch (erro) { erroEncontros = erro.message; }
+    desenharCalendarios();
+  } else {
+    abrirPainel();
+  }
 }
 
 function sairDoModoProfessor() {
@@ -349,16 +368,17 @@ function sairDoModoProfessor() {
   try { sessionStorage.removeItem("inlaw-passe"); sessionStorage.removeItem("inlaw-senha"); sessionStorage.removeItem("inlaw-prof"); } catch {}
   document.body.classList.remove("prof");
   encontros = null;
+  try { sessionStorage.removeItem("inlaw-encontros-cache"); sessionStorage.removeItem("inlaw-listas-cache"); } catch {}
   fecharPainel();
 }
 
 // Painel da área do professor (abre por cima do site)
-function abrirPainel() {
+function abrirPainel(recarregar = true) {
   if (!$("area-professor")) return;
   $("area-professor").hidden = false;
   document.body.classList.add("painel-aberto");
-  desenharCalendarios();
-  carregarEncontros().then(desenharCalendarios);
+  desenharCalendarios();   // mostra na hora o que já tem na memória
+  if (recarregar) carregarEncontros().then(desenharCalendarios);
 }
 function fecharPainel() {
   if (!$("area-professor")) return;
@@ -396,7 +416,7 @@ function pedirSenha() {
       const r = await planilha({ acao: "login", senha: $("senha").value });
       if (!r.ok) throw new Error(r.erro);
       modal.close();
-      entrarNoModoProfessor(r.token);
+      entrarNoModoProfessor(r);
     } catch (erro) {
       $("erro-login").textContent = erro.message;
       $("entrar").disabled = false;
@@ -425,16 +445,31 @@ const presencas = {
 };
 
 
-// ---------- Chamada (tela do professor) ----------
-let atualizacaoAoVivo = null;   // recarrega a lista enquanto a chamada está aberta
+const listas = lerSessao("inlaw-listas-cache") || {};
+Object.entries(listas).forEach(([d, l]) => { cachePresentes[d] = l.length; });
+let rodadaAoVivo = 0;   // cada tela aberta ganha um número; ao trocar de tela, a atualização antiga para
+
+function guardarLista(data, lista) {
+  listas[data] = lista;
+  cachePresentes[data] = lista.length;
+  salvarSessao("inlaw-listas-cache", listas);
+}
+
+function aoVivo(fn, intervalo = 4000) {
+  const minha = ++rodadaAoVivo;
+  (async function volta() {
+    if (minha !== rodadaAoVivo || !modal.open) return;
+    await fn();
+    setTimeout(volta, intervalo);
+  })();
+}
 modal.addEventListener("close", () => {
-  clearInterval(atualizacaoAoVivo);
+  rodadaAoVivo++;
   if ($("area-professor") && !$("area-professor").hidden) desenharCalendarios();
 });
 
 function abrirChamada(data) {
   if (!dataValida(data)) return;
-  clearInterval(atualizacaoAoVivo);
   abrir(`
     <div class="chamada">
       <div class="chamada-topo">
@@ -458,34 +493,49 @@ function abrirChamada(data) {
     </div>`);
 
   const campoNome = $("c-nome"), aviso = $("c-aviso");
-  let removerQuem = null;   // pede um segundo clique no × antes de remover
+  let removerQuem = null;      
+  let pendentes = [];         
+  let removidos = new Set();   
 
-  async function mostrarLista() {
-    let lista;
-    try { lista = await presencas.listar(data); }
-    catch (erro) { if ($("c-aviso")) aviso.textContent = "Não foi possível carregar a lista: " + erro.message; return; }
+  function desenharLista() {
     if (!$("c-lista")) return;   // a janela já foi fechada
-
-    $("c-total").textContent = lista.length;
+    const daPlanilha = (listas[data] || []).filter(p => !removidos.has(mesmoNome(p.nome)));
+    const lista = [...daPlanilha, ...pendentes.filter(p => !daPlanilha.some(x => mesmoNome(x.nome) === mesmoNome(p.nome)))];
+    $("c-total").textContent = listas[data] ? lista.length : "…";
     $("c-lista").innerHTML = lista.map((p, i) => `
-      <tr>
-        <td>${i + 1}</td><td>${escapar(p.nome)}</td><td>${escapar(p.hora)}</td>
-        <td><button aria-label="Remover ${escapar(p.nome)}" data-nome="${escapar(p.nome)}">×</button></td>
+      <tr${p.salvando ? ' style="opacity:.55"' : ""}>
+        <td>${i + 1}</td><td>${escapar(p.nome)}</td><td>${p.salvando ? "salvando…" : escapar(p.hora)}</td>
+        <td>${p.salvando ? "" : `<button aria-label="Remover ${escapar(p.nome)}" data-nome="${escapar(p.nome)}">×</button>`}</td>
       </tr>`).join("");
 
     document.querySelectorAll("#c-lista button").forEach(botao => {
       botao.onclick = async () => {
-        if (removerQuem !== botao.dataset.nome) {
-          removerQuem = botao.dataset.nome;
-          aviso.textContent = `Clique no × de novo para remover ${botao.dataset.nome}.`;
+        const nome = botao.dataset.nome;
+        if (removerQuem !== nome) {
+          removerQuem = nome;
+          aviso.textContent = `Clique no × de novo para remover ${nome}.`;
           return;
         }
         removerQuem = null;
         aviso.textContent = "";
-        try { await presencas.remover(data, botao.dataset.nome); } catch (erro) { aviso.textContent = erro.message; }
-        mostrarLista();
+        removidos.add(mesmoNome(nome));
+        desenharLista();
+        try {
+          await presencas.remover(data, nome);
+          guardarLista(data, (listas[data] || []).filter(p => mesmoNome(p.nome) !== mesmoNome(nome)));
+        } catch (erro) {
+          if ($("c-aviso")) aviso.textContent = erro.message;
+        }
+        removidos.delete(mesmoNome(nome));
+        desenharLista();
       };
     });
+  }
+
+  async function buscarLista() {
+    try { guardarLista(data, await presencas.listar(data)); }
+    catch (erro) { if ($("c-aviso") && !listas[data]) aviso.textContent = "Não foi possível carregar a lista: " + erro.message; }
+    desenharLista();
   }
 
   $("form-chamada").onsubmit = async ev => {
@@ -493,34 +543,40 @@ function abrirChamada(data) {
     const nome = campoNome.value.trim().replace(/\s+/g, " ");
     if (!nome) return;
     if (!nomeValido(nome)) { aviso.textContent = "Escreva nome e sobrenome, só com letras."; return; }
+    if ([...(listas[data] || []), ...pendentes].some(p => mesmoNome(p.nome) === mesmoNome(nome))) {
+      aviso.textContent = `${nome} já está na chamada deste encontro.`;
+      return;
+    }
 
-    $("c-registrar").disabled = true;
+    const item = { nome, salvando: true };
+    pendentes.push(item);
+    aviso.textContent = "";
+    campoNome.value = "";
+    campoNome.focus();
+    desenharLista();
+
     try {
       const r = await presencas.registrar(data, nome, true);
       if (!r.ok) throw new Error(r.erro);
-      aviso.textContent = "";
-      campoNome.value = "";
-      mostrarLista();
+      guardarLista(data, [...(listas[data] || []), { nome, hora: r.hora }]);
     } catch (erro) {
-      aviso.textContent = erro.message;
+      if ($("c-aviso")) aviso.textContent = erro.message;
     }
-    $("c-registrar").disabled = false;
-    campoNome.focus();
+    pendentes = pendentes.filter(p => p !== item);
+    desenharLista();
   };
 
   $("c-qr").onclick = () => mostrarQR(data);
   $("c-exportar").onclick = () => exportarPlanilha([data]);
   $("c-exportar-todos").onclick = () => exportarPlanilha((encontros || []).map(e => e.data));
 
-  mostrarLista();
-  atualizacaoAoVivo = setInterval(mostrarLista, 5000);
+  desenharLista();   
+  aoVivo(buscarLista);
   campoNome.focus();
 }
 
 
-// ---------- QR code para projetar na tela ----------
 function mostrarQR(data) {
-  clearInterval(atualizacaoAoVivo);
   const link = `${location.origin}${location.pathname}?presenca=${data}`;
   const ehHoje = data === hojeISO();
 
@@ -537,15 +593,12 @@ function mostrarQR(data) {
   else $("qr-codigo").textContent = link;
   $("qr-voltar").onclick = () => abrirChamada(data);
 
-  const atualizarTotal = async () => {
-    try { const lista = await presencas.listar(data); if ($("qr-total")) $("qr-total").textContent = lista.length; } catch {}
-  };
-  atualizarTotal();
-  atualizacaoAoVivo = setInterval(atualizarTotal, 5000);
+  aoVivo(async () => {
+    try { const lista = await presencas.listar(data); guardarLista(data, lista); if ($("qr-total")) $("qr-total").textContent = lista.length; } catch {}
+  });
 }
 
 
-// ---------- Página do aluno (aberta pelo QR code) ----------
 function paginaDoAluno(data) {
   const chave = "inlaw-respondi-" + data;
   const jaRespondeu = lerJSON(chave, null);
@@ -589,7 +642,6 @@ function paginaDoAluno(data) {
 }
 
 
-// ---------- Planilha exportada (.csv, abre no Excel) ----------
 async function exportarPlanilha(datas) {
   // células que começam com = + - @ virariam fórmula no Excel: o apóstrofo impede isso
   const celula = v => `"${String(v).replace(/^([=+\-@\t\r])/, "'$1").replace(/"/g, '""')}"`;
@@ -618,15 +670,13 @@ async function exportarPlanilha(datas) {
 }
 
 
-// ---------- Ao carregar a página ----------
-try { sessionStorage.removeItem("inlaw-senha"); } catch {}   // versões antigas guardavam a senha aqui
+try { sessionStorage.removeItem("inlaw-senha"); } catch {}   
 if (passeProf()) document.body.classList.add("prof");
 
 const dataDaPresenca = new URLSearchParams(location.search).get("presenca");
 if (dataDaPresenca && dataValida(dataDaPresenca)) paginaDoAluno(dataDaPresenca);
 
 
-// ---------- Galeria em movimento ----------
 function mostrarFotos(fotos) {
   const galeria = $("fotos");
   if (!galeria) return;
@@ -638,7 +688,6 @@ function mostrarFotos(fotos) {
   const caminho = PASTA_FOTOS ? PASTA_FOTOS + "/" : "";
   const foto = n => `<button aria-label="Ampliar foto: ${escapar(nomeDoArquivo(n))}"><img src="${escapar(caminho + n)}" alt="${escapar(nomeDoArquivo(n))}"></button>`;
 
-  // cada faixa repete as fotos para a rolagem nunca ter buraco
   const faixa = (lista, aoContrario) => {
     let repetidas = lista;
     while (repetidas.length < 8) repetidas = repetidas.concat(lista);
@@ -647,13 +696,11 @@ function mostrarFotos(fotos) {
     return `<div class="trilho${aoContrario ? " volta" : ""}" style="--tempo:${tempo}s">${html}${html}</div>`;
   };
 
-  // com mais de 5 fotos, divide em duas faixas que andam em sentidos opostos
   const meio = Math.ceil(fotos.length / 2);
   galeria.innerHTML = fotos.length > 5
     ? faixa(fotos.slice(0, meio)) + faixa(fotos.slice(meio), true)
     : faixa(fotos);
 
-  // se alguma foto da lista não existir no repositório, ela some em vez de aparecer quebrada
   galeria.querySelectorAll("img").forEach(img => img.addEventListener("error", () => img.parentElement.remove()));
 
   galeria.querySelectorAll("button").forEach(botao => {
@@ -675,12 +722,6 @@ fetch(urlGitHub(PASTA_FOTOS))
   .catch(() => mostrarFotos(FOTOS_PADRAO));
 
 
-// ---------- Blog em feed ----------
-/* Cada post é um arquivo .md na pasta blog/:
-     # Coordenador de Proteção de Dados
-     serie: As Profissões do Futuro! | autor: Nome | data: 24/10/2026
-     (texto em Markdown...)
-   Opcional na 2ª linha: "capa: foto.jpg" usa a imagem do Insta no lugar do card desenhado. */
 
 function lerPost(texto, arquivo) {
   const linhas = texto.split("\n");
