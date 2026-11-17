@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Segurança: o navegador só carrega scripts do próprio site e das bibliotecas listadas aqui -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com https://script.google.com https://script.googleusercontent.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>InLaw · Laboratório de Inovação e Direito – AMF</title>
 <meta name="description" content="InLaw – Laboratório de Inovação e Direito da Antonio Meneghetti Faculdade.">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -11,7 +14,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;1,8..60,400&family=Jost:wght@400;500;600&family=Archivo:wght@800;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
@@ -23,8 +26,8 @@
       <strong>InLaw</strong>
       <span>Laboratório de Inovação e Direito</span>
     </a>
-    <button class="menu-btn" aria-label="Abrir menu" onclick="document.getElementById('menu').classList.toggle('aberto')">☰</button>
-    <ul id="menu" onclick="this.classList.remove('aberto')">
+    <button class="menu-btn" type="button" aria-label="Abrir menu">☰</button>
+    <ul id="menu">
       <li><a href="#inicio" class="ativo">Início</a></li>
       <li><a href="#sobre">O laboratório</a></li>
       <li><a href="#equipe">Equipe</a></li>
@@ -34,7 +37,7 @@
       <li><a href="#contato">Contato</a></li>
     </ul>
     <div class="icones">
-      <a class="insta" href="https://www.instagram.com/inlaw.lab/" target="_blank" aria-label="Instagram do InLaw">
+      <a class="insta" href="https://www.instagram.com/inlaw.lab/" target="_blank" rel="noopener noreferrer" aria-label="Instagram do InLaw">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
       </a>
       <button class="prof-icone" id="btn-prof" type="button" aria-label="Área do professor" title="Área do professor">
@@ -119,6 +122,7 @@
       </div>
     </div>
     <h3 class="membros-titulo">Membros ativos</h3>
+    <ul class="membros" id="membros"></ul>
     
   </div>
 </section>
@@ -202,7 +206,7 @@
     <h2>Faça parte do InLaw.</h2>
     <p>Quer participar dos encontros ou enviar um texto para o blog? Fale com a gente pelo Instagram.</p>
     <div class="acoes">
-      <a class="btn" href="https://www.instagram.com/inlaw.lab/" target="_blank">Siga @inlaw.lab no Instagram</a>
+      <a class="btn" href="https://www.instagram.com/inlaw.lab/" target="_blank" rel="noopener noreferrer">Siga @inlaw.lab no Instagram</a>
     </div>
   </div>
 </section>
@@ -234,9 +238,9 @@
   </div>
 </section>
 
-<dialog id="modal"><button class="fechar" aria-label="Fechar" onclick="modal.close()">×</button><div id="modal-conteudo"></div></dialog>
+<dialog id="modal"><button class="fechar" type="button" aria-label="Fechar">×</button><div id="modal-conteudo"></div></dialog>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="script.js"></script>
 </body>
 </html>
