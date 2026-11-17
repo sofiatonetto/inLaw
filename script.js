@@ -1,24 +1,36 @@
+
 const GITHUB_USUARIO = "sofiatonetto";
 const GITHUB_REPO    = "inLaw";
 const BRANCH         = "main";
 const PASTA_FOTOS    = "";      
 const PASTA_BLOG     = "blog";
 
+// Membros ativos (um nome por item)
 const MEMBROS = [
-  "Nome do Membro",
-  "Outro Membro",
-  "Mais um Membro",
+  "Larissa Rodrigues Ribeiro",
+  "Lavinya De Vargas",
+  "Suellen Camille Berg de Melo",
+  "Joanna Funck",
+  "Marlei Costa",
+  "Ana Francisca Meirelles Izalanski",
+  "Luéllen Smolareck",
+  "João Schenini Trodo",
+  "Jaciani da Silva",
+  "Mariely Martins Fagundes",
+  "Matheus Almeida de Siqueira",
+  "Luiza Charão Dutra",
+  "Sofia Valentina Tonetto",
 ];
 
-
+// Encontros: o professor cria e exclui pelo botão "+ Novo encontro", na Área do professor.
+// Eles ficam guardados na Planilha Google. Não precisa mexer aqui.
+// (Esta lista só é usada uma vez, para levar os encontros antigos para a planilha.)
 const ENCONTROS = [
   { data: "2026-11-09", tema: "" },
 ];
 
-const HASH_SENHA = "2728e8ede69eded5f5930e935f6fec08617d9659772642ecd39d2554d62dbfed";
-
-// Chamada por QR code: cole aqui o link do "App da Web" da Planilha Google
-// (passo a passo no arquivo LEIA-ME-chamada.txt). Vazio = chamada só neste aparelho.
+// Link do "App da Web" da Planilha Google (passo a passo no LEIA-ME-chamada.txt).
+// A senha da Área do professor fica guardada só na planilha, nunca aqui no site.
 const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbxiuVbWyOS2jt0B9xTC-FlqVvO0IG-48Gz2-DeEPaQWU9HBi5DP4goZdwkyrHka0SlhKA/exec";
 
 // Fotos usadas na galeria se o site não conseguir ler o GitHub
@@ -75,14 +87,19 @@ E aí, já sabia dessa profissão inovadora?` },
    Daqui para baixo é o funcionamento do site.
    ========================================================= */
 
+
 // ---------- Ajudantes ----------
 const $ = id => document.getElementById(id);
-const escapar = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const escapar = t => String(t ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // "Ána  SOUZA" -> "ana souza": usado para não contar a mesma pessoa duas vezes
-const mesmoNome = n => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-const dataBR = iso => iso.split("-").reverse().join("/");                 // 2026-05-07 -> 07/05/2026
+const mesmoNome = n => String(n).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const dataValida = t => /^\d{4}-\d{2}-\d{2}$/.test(t) && !isNaN(new Date(t + "T12:00"));
+const dataBR = iso => String(iso).split("-").reverse().join("/");          // 2026-05-07 -> 07/05/2026
 const nomeDoArquivo = n => n.replace(/\.\w+$/, "").replace(/[-_]/g, " ");  // encontro-do-grupo.jpg -> encontro do grupo
 const urlGitHub = pasta => `https://api.github.com/repos/${GITHUB_USUARIO}/${GITHUB_REPO}/contents/${pasta}?ref=${BRANCH}`;
+const hojeISO = () => new Date().toLocaleDateString("sv-SE");              // 2026-11-17
+// Nomes válidos: começam com letra, só letras, espaços, apóstrofo, ponto e hífen
+const nomeValido = n => /^\p{L}[\p{L}\p{M}' .-]{2,79}$/u.test(n) && /\s/.test(n);
 
 function lerJSON(chave, padrao) {
   try { return JSON.parse(localStorage.getItem(chave)) || padrao; } catch { return padrao; }
@@ -91,15 +108,46 @@ function salvarJSON(chave, valor) {
   try { localStorage.setItem(chave, JSON.stringify(valor)); } catch {}
 }
 
+// Limpa o HTML gerado pelos posts do blog: só deixa formatação de texto, sem scripts
+const TAGS_PERMITIDAS = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "S", "A", "UL", "OL", "LI", "BLOCKQUOTE",
+  "H1", "H2", "H3", "H4", "H5", "H6", "CODE", "PRE", "HR", "IMG", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "SPAN"]);
+const urlSegura = u => /^(https?:|mailto:|#|\/|\.\/|[\w-]+(\/[\w.-]+)*\.\w+$)/i.test(String(u).trim()) && !/^\s*javascript:/i.test(u);
+function htmlSeguro(html) {
+  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+  const limpar = no => {
+    [...no.children].forEach(el => {
+      if (!TAGS_PERMITIDAS.has(el.tagName)) { el.replaceWith(document.createTextNode(el.textContent)); return; }
+      [...el.attributes].forEach(a => {
+        const ok = (el.tagName === "A" && a.name === "href" && urlSegura(a.value)) ||
+                   (el.tagName === "IMG" && (a.name === "alt" || (a.name === "src" && urlSegura(a.value))));
+        if (!ok) el.removeAttribute(a.name);
+      });
+      if (el.tagName === "A") { el.setAttribute("target", "_blank"); el.setAttribute("rel", "noopener noreferrer"); }
+      limpar(el);
+    });
+  };
+  limpar(doc.body.firstChild);
+  return doc.body.firstChild.innerHTML;
+}
+
+// O site não pode ser aberto dentro de outro site (evita golpes de "clique escondido")
+if (window.top !== window.self) { try { window.top.location = window.self.location; } catch { document.body.innerHTML = ""; } }
+
 
 // ---------- Janela (modal) ----------
 const modal = $("modal");
 modal.addEventListener("click", e => { if (e.target === modal) modal.close(); });
+modal.querySelector(".fechar")?.addEventListener("click", () => modal.close());
 
 function abrir(html) {
   $("modal-conteudo").innerHTML = html;
-  modal.showModal();
+  if (!modal.open) modal.showModal();
 }
+
+
+// ---------- Menu do celular ----------
+document.querySelector(".menu-btn")?.addEventListener("click", () => $("menu").classList.toggle("aberto"));
+$("menu")?.addEventListener("click", () => $("menu").classList.remove("aberto"));
 
 
 // ---------- Rodapé e membros ----------
@@ -123,7 +171,7 @@ linksMenu.forEach(link => {
 });
 
 
-// ---------- Estilos dos botões de encontro (ficam aqui para não depender do estilo.css) ----------
+// ---------- Estilos dos botões novos (ficam aqui para não depender do estilo.css) ----------
 document.head.insertAdjacentHTML("beforeend", `<style>
   #form-encontro input { display:block; width:100%; box-sizing:border-box; margin:0 0 10px; }
   .excluir-encontro { display:block; margin:8px auto 0; padding:2px 6px; background:none; border:0;
@@ -134,156 +182,55 @@ document.head.insertAdjacentHTML("beforeend", `<style>
 </style>`);
 
 
-// ---------- Encontros criados pelo botão "+ Novo encontro" ----------
-// Ficam no arquivo encontros.json do repositório do GitHub (o mesmo do blog e das fotos),
-// então aparecem em qualquer computador. Para salvar, cada computador do professor
-// precisa de uma "chave do GitHub", colada uma vez só (passo a passo: LEIA-ME-encontros.txt).
-// Se GITHUB_USUARIO e GITHUB_REPO não estiverem preenchidos, ficam só neste navegador.
-const ARQUIVO_ENCONTROS = "encontros.json";
-const CHAVE_ENCONTROS = "inlaw-encontros";   // reserva: encontros salvos só neste navegador
-const CHAVE_TOKEN = "inlaw-github-token";
-const hojeISO = () => new Date().toLocaleDateString("sv-SE");   // 2026-11-16
+// ---------- Conversa com a Planilha Google ----------
+// Tudo vai por POST (nada sensível aparece em links). O professor entra com a senha uma vez
+// e recebe um "passe" que vale por 6 horas; a senha não fica guardada no navegador.
+const VERSAO_PLANILHA = 3;
+const passeProf = () => { try { return sessionStorage.getItem("inlaw-passe") || ""; } catch { return ""; } };
 
-let encontrosDoGitHub = null;   // lista lida do encontros.json (null = ainda não existe ou não deu para ler)
-let shaEncontros = null;        // "versão" do arquivo, que o GitHub exige para salvar por cima
-let situacaoEncontros = "";     // "github" | "sem-arquivo" | "erro" | "nao-configurado"
-
-const githubConfigurado = () => !/^SEU-/i.test(GITHUB_USUARIO) && !/^SEU-/i.test(GITHUB_REPO);
-const tokenGitHub = () => { try { return localStorage.getItem(CHAVE_TOKEN) || ""; } catch { return ""; } };
-const precisaDeChave = () => githubConfigurado() && !tokenGitHub();
-const urlEncontros = () => `https://api.github.com/repos/${GITHUB_USUARIO}/${GITHUB_REPO}/contents/${ARQUIVO_ENCONTROS}`;
-const cabecalhosGitHub = (comChave = true) => ({
-  Accept: "application/vnd.github+json",
-  ...(comChave && tokenGitHub() ? { Authorization: `Bearer ${tokenGitHub()}` } : {}),
-});
-const deBase64 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, "")), c => c.charCodeAt(0)));
-const paraBase64 = texto => { let s = ""; new TextEncoder().encode(texto).forEach(b => { s += String.fromCharCode(b); }); return btoa(s); };
-
-const arrumarLista = lista => (Array.isArray(lista) ? lista : [])
-  .filter(e => /^\d{4}-\d{2}-\d{2}$/.test(e?.data))
-  .map(e => ({ data: e.data, tema: String(e.tema || "").slice(0, 80) }))
-  .filter((e, i, todos) => todos.findIndex(x => x.data === e.data) === i)
-  .sort((a, b) => a.data.localeCompare(b.data));
-
-function encontrosGuardados() {
-  const g = lerJSON(CHAVE_ENCONTROS, {});
-  return { criados: Array.isArray(g.criados) ? g.criados : [], ocultos: Array.isArray(g.ocultos) ? g.ocultos : [] };
-}
-
-function encontrosDesteNavegador() {
-  const { criados, ocultos } = encontrosGuardados();
-  return arrumarLista([...criados, ...ENCONTROS].filter(e => !ocultos.includes(e?.data)));
-}
-
-const todosEncontros = () => encontrosDoGitHub ?? encontrosDesteNavegador();
-
-// Lê o encontros.json do GitHub
-async function carregarEncontros() {
-  if (!githubConfigurado()) { situacaoEncontros = "nao-configurado"; return; }
+async function planilha(dados) {
+  if (!URL_PLANILHA) throw new Error("Falta colar o link da planilha em URL_PLANILHA, no topo do script.js.");
+  let r;
   try {
-    const url = `${urlEncontros()}?ref=${BRANCH}&t=${Date.now()}`;
-    let r = await fetch(url, { headers: cabecalhosGitHub(), cache: "no-store" });
-    if (r.status === 401) r = await fetch(url, { headers: cabecalhosGitHub(false), cache: "no-store" });   // chave vencida: lê sem ela
-    if (r.status === 404) { encontrosDoGitHub = null; shaEncontros = null; situacaoEncontros = "sem-arquivo"; return; }
-    if (!r.ok) throw new Error();
-    const arquivo = await r.json();
-    encontrosDoGitHub = arrumarLista(JSON.parse(deBase64(arquivo.content)));
-    shaEncontros = arquivo.sha;
-    situacaoEncontros = "github";
+    // text/plain evita bloqueio de CORS no Apps Script
+    r = await fetch(URL_PLANILHA, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) }).then(r => r.json());
   } catch {
-    if (!encontrosDoGitHub) situacaoEncontros = "erro";
+    throw new Error("Sem conexão com a planilha. Confira a internet e tente de novo.");
+  }
+  if ((r.versao || 0) < VERSAO_PLANILHA) throw new Error("O código da planilha está desatualizado. Instale o Codigo.gs novo (veja o LEIA-ME-chamada.txt).");
+  if (r.sessao === false) { sairDoModoProfessor(); throw new Error(r.erro); }
+  return r;
+}
+const comoProfessor = dados => planilha({ ...dados, token: passeProf() });
+
+
+// ---------- Encontros (guardados na planilha) ----------
+let encontros = null;   // null = ainda não carregou
+let erroEncontros = "";
+
+async function carregarEncontros() {
+  try {
+    let r = await comoProfessor({ acao: "encontros" });
+    if (!r.ok) throw new Error(r.erro);
+    if (!r.migrado) {   // primeira vez: leva os encontros antigos do site para a planilha
+      const antigos = [...ENCONTROS, ...(lerJSON("inlaw-encontros", {}).criados || [])].filter(e => dataValida(e?.data));
+      r = await comoProfessor({ acao: "migrarEncontros", lista: antigos });
+      if (!r.ok) throw new Error(r.erro);
+    }
+    encontros = r.encontros;
+    erroEncontros = "";
+  } catch (erro) {
+    erroEncontros = erro.message;
   }
 }
 
-// Salva no GitHub: pega a versão mais nova, aplica a mudança e grava
-async function salvarNoGitHub(mudar, mensagem) {
-  for (let tentativa = 0; tentativa < 3; tentativa++) {
-    await carregarEncontros();
-    if (situacaoEncontros === "erro") throw new Error("Não foi possível falar com o GitHub agora. Tente de novo.");
-    // na primeira vez (arquivo ainda não existe), leva junto os encontros que já existiam no site
-    const nova = arrumarLista(mudar(encontrosDoGitHub ?? encontrosDesteNavegador()));
-    const r = await fetch(urlEncontros(), {
-      method: "PUT",
-      headers: { ...cabecalhosGitHub(), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: mensagem,
-        content: paraBase64(JSON.stringify(nova, null, 2) + "\n"),
-        branch: BRANCH,
-        ...(shaEncontros ? { sha: shaEncontros } : {}),
-      }),
-    });
-    if (r.ok) {
-      encontrosDoGitHub = nova;
-      shaEncontros = (await r.json()).content?.sha || null;
-      situacaoEncontros = "github";
-      return;
-    }
-    if (r.status === 409 || r.status === 422) continue;   // alguém salvou ao mesmo tempo: tenta de novo
-    if (r.status === 401) { esquecerChave(); throw new Error("A chave do GitHub venceu ou está errada. Tente de novo para colar uma nova."); }
-    if (r.status === 403 || r.status === 404) throw new Error("Esta chave do GitHub não tem permissão para salvar no repositório do site.");
-    throw new Error("O GitHub não respondeu. Tente de novo.");
-  }
-  throw new Error("Outra pessoa estava salvando ao mesmo tempo. Tente de novo.");
-}
-
-async function criarEncontro(data, tema) {
-  if (githubConfigurado()) return salvarNoGitHub(lista => [...lista, { data, tema }], `Novo encontro: ${dataBR(data)}`);
-  const g = encontrosGuardados();
-  g.criados = g.criados.filter(e => e.data !== data).concat({ data, tema });
-  g.ocultos = g.ocultos.filter(d => d !== data);
-  salvarJSON(CHAVE_ENCONTROS, g);
-}
-
-async function excluirEncontro(data) {
-  if (githubConfigurado()) return salvarNoGitHub(lista => lista.filter(e => e.data !== data), `Exclui encontro: ${dataBR(data)}`);
-  const g = encontrosGuardados();
-  g.criados = g.criados.filter(e => e.data !== data);
-  if (!g.ocultos.includes(data)) g.ocultos.push(data);
-  salvarJSON(CHAVE_ENCONTROS, g);
-}
-
-// ---------- Chave do GitHub (colada uma vez em cada computador) ----------
-function esquecerChave() { try { localStorage.removeItem(CHAVE_TOKEN); } catch {} }
-
-function pedirChaveGitHub(depois) {
-  abrir(`
-    <form class="login" id="form-chave" autocomplete="off">
-      <h1>Conectar ao GitHub</h1>
-      <p>Para criar e excluir encontros, este computador precisa da chave do GitHub do InLaw.
-      É só colar uma vez; o site lembra dela neste navegador.</p>
-      <input type="password" id="g-chave" placeholder="Cole a chave aqui (começa com github_pat_)" required>
-      <p class="aviso" id="g-aviso" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
-      <button id="g-salvar">Conectar</button>
-      ${tokenGitHub() ? '<p style="margin-top:14px"><button type="button" class="excluir-encontro" id="g-esquecer">Remover a chave deste computador</button></p>' : ""}
-    </form>`);
-  $("g-chave").focus();
-  if ($("g-esquecer")) $("g-esquecer").onclick = () => { esquecerChave(); modal.close(); };
-
-  $("form-chave").onsubmit = async ev => {
-    ev.preventDefault();
-    const chave = $("g-chave").value.trim();
-    $("g-salvar").disabled = true;
-    $("g-salvar").textContent = "Conferindo…";
-    try {
-      const r = await fetch(`https://api.github.com/repos/${GITHUB_USUARIO}/${GITHUB_REPO}`, {
-        headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${chave}` }, cache: "no-store",
-      });
-      if (r.status === 401) throw new Error("Chave inválida ou vencida. Confira se copiou ela inteira.");
-      if (!r.ok) throw new Error("Esta chave não dá acesso ao repositório do site.");
-      const repo = await r.json();
-      if (repo.permissions && !repo.permissions.push) throw new Error("Esta chave só pode ler. Ela precisa da permissão Contents: Read and write.");
-      try { localStorage.setItem(CHAVE_TOKEN, chave); } catch {}
-      if (depois) depois(); else modal.close();
-    } catch (erro) {
-      $("g-aviso").textContent = erro.message || "Não foi possível conferir a chave. Tente de novo.";
-      $("g-salvar").disabled = false;
-      $("g-salvar").textContent = "Conectar";
-    }
-  };
+async function mudarEncontros(dados) {
+  const r = await comoProfessor(dados);
+  if (!r.ok) throw new Error(r.erro || "A planilha não aceitou a mudança.");
+  encontros = r.encontros;
 }
 
 function novoEncontro() {
-  if (precisaDeChave()) return pedirChaveGitHub(novoEncontro);
   abrir(`
     <form class="login" id="form-encontro">
       <h1>Novo encontro</h1>
@@ -299,16 +246,16 @@ function novoEncontro() {
     ev.preventDefault();
     const data = $("e-data").value;
     const tema = $("e-tema").value.trim().replace(/\s+/g, " ");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) { $("e-aviso").textContent = "Escolha uma data válida."; return; }
-    if (todosEncontros().some(e => e.data === data)) { $("e-aviso").textContent = `Já existe um encontro em ${dataBR(data)}.`; return; }
+    if (!dataValida(data)) { $("e-aviso").textContent = "Escolha uma data válida."; return; }
+    if ((encontros || []).some(e => e.data === data)) { $("e-aviso").textContent = `Já existe um encontro em ${dataBR(data)}.`; return; }
 
     $("e-criar").disabled = true;
     $("e-criar").textContent = "Salvando…";
     try {
-      await criarEncontro(data, tema);
+      await mudarEncontros({ acao: "encontro", data, tema });
       modal.close();   // ao fechar, a lista de encontros é redesenhada
     } catch (erro) {
-      $("e-aviso").textContent = erro.message || "Não foi possível salvar. Tente de novo.";
+      $("e-aviso").textContent = erro.message;
       $("e-criar").disabled = false;
       $("e-criar").textContent = "Criar encontro";
     }
@@ -319,17 +266,23 @@ function novoEncontro() {
 // ---------- Encontros: mini calendários ----------
 function desenharCalendarios() {
   if (!$("encontros")) return;
+  if (erroEncontros) {
+    $("encontros").innerHTML = `<p class="aviso-encontros">${escapar(erroEncontros)}</p>`;
+    return;
+  }
+  if (!encontros) { $("encontros").innerHTML = '<p class="vazio">Carregando encontros…</p>'; return; }
+
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-
-  const encontros = todosEncontros()
+  const lista = encontros
+    .filter(e => dataValida(e.data))
     .map(e => ({ ...e, dia: new Date(e.data + "T12:00") }))
     .sort((a, b) => a.dia - b.dia);
-  const proximo = encontros.find(e => e.dia >= hoje);
+  const proximo = lista.find(e => e.dia >= hoje);
 
   // agrupa por semestre: "2026 · 1º semestre"
   const semestres = {};
-  encontros.forEach(e => {
+  lista.forEach(e => {
     const nome = `${e.dia.getFullYear()} · ${e.dia.getMonth() < 6 ? 1 : 2}º semestre`;
     (semestres[nome] ||= []).push(e);
   });
@@ -339,33 +292,26 @@ function desenharCalendarios() {
 
   const calendario = e => {
     const classe = e === proximo ? "proximo" : e.dia < hoje ? "passado" : "";
+    const total = cachePresentes[e.data];
     return `
         <div class="cal ${classe}">
           <div class="mes">${e.dia.toLocaleDateString("pt-BR", { month: "long" })}</div>
           <div class="dia"><b>${e.dia.getDate()}</b><small>${diaDaSemana(e.dia)}</small></div>
           ${e.tema ? `<div class="tema">${escapar(e.tema)}</div>` : ""}
-          <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${contarPresentes(e.data) ?? "abrir"}${contarPresentes(e.data) === null ? "" : " presentes"}</small></button>
+          <button class="abrir-chamada" data-data="${e.data}">Chamada<small>${total === undefined ? "abrir" : total + " presentes"}</small></button>
           <button class="excluir-encontro" type="button" data-data="${e.data}">Excluir</button>
         </div>`;
   };
 
-  const aviso = {
-    "nao-configurado": '<p class="aviso-encontros">Atenção: os encontros estão salvos só neste navegador. Para aparecerem em todos os computadores, preencha GITHUB_USUARIO e GITHUB_REPO no topo do script.js.</p>',
-    "erro": '<p class="aviso-encontros">Não foi possível ler os encontros do GitHub agora. Confira a internet e abra a área do professor de novo.</p>',
-  }[situacaoEncontros] || "";
-
-  if (!encontros.length) {
-    $("encontros").innerHTML = aviso + '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
+  if (!lista.length) {
+    $("encontros").innerHTML = '<p class="vazio">Nenhum encontro cadastrado ainda. Clique em “+ Novo encontro” para criar o primeiro.</p>';
     return;
   }
-  $("encontros").innerHTML = aviso + Object.entries(semestres).reverse().map(([nome, lista]) => `
+  $("encontros").innerHTML = Object.entries(semestres).reverse().map(([nome, doSemestre]) => `
     <div class="semestre">
-      <div class="semestre-topo"><h3>${nome}</h3><span>Encontros às ${[...new Set(lista.map(e => noPlural(e.dia)))].join(" e ")}</span></div>
-      <div class="calendarios">${lista.map(calendario).join("")}</div>
-    </div>`).join("") + (tokenGitHub()
-      ? '<p class="chave-linha"><button type="button" class="excluir-encontro" id="trocar-chave">Chave do GitHub deste computador</button></p>'
-      : "");
-  if ($("trocar-chave")) $("trocar-chave").onclick = () => pedirChaveGitHub();
+      <div class="semestre-topo"><h3>${nome}</h3><span>Encontros às ${[...new Set(doSemestre.map(e => noPlural(e.dia)))].join(" e ")}</span></div>
+      <div class="calendarios">${doSemestre.map(calendario).join("")}</div>
+    </div>`).join("");
 
   document.querySelectorAll(".abrir-chamada").forEach(botao => {
     botao.onclick = () => abrirChamada(botao.dataset.data);
@@ -380,35 +326,30 @@ function desenharCalendarios() {
         botao.textContent = "Clique de novo para excluir";
         return;
       }
-      if (precisaDeChave()) return pedirChaveGitHub(() => { modal.close(); });
       botao.disabled = true;
       botao.textContent = "Excluindo…";
-      excluirEncontro(botao.dataset.data)
+      mudarEncontros({ acao: "excluirEncontro", data: botao.dataset.data })
         .then(desenharCalendarios)
-        .catch(erro => { botao.disabled = false; botao.textContent = erro.message || "Erro. Tente de novo."; botao.classList.remove("confirmar"); });
+        .catch(erro => { botao.disabled = false; botao.textContent = erro.message; botao.classList.remove("confirmar"); });
     };
   });
 }
 
 
 // ---------- Área do professor ----------
-// Obs.: sem a planilha, a senha só afasta visitantes comuns. Com a planilha, a lista de
-// presentes só é entregue a quem manda a senha certa.
-async function sha256(texto) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
-  return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
+function entrarNoModoProfessor(passe) {
+  try { sessionStorage.setItem("inlaw-passe", passe); } catch {}
+  document.body.classList.add("prof");
+  abrirPainel();
 }
-window.gerarHash = async texto => { const h = await sha256(texto); console.log(h); return h; };
 
-const senhaProf = () => { try { return sessionStorage.getItem("inlaw-senha") || ""; } catch { return ""; } };
-
-function modoProfessor(ligar, senha) {
-  document.body.classList.toggle("prof", ligar);
-  try {
-    if (ligar) { sessionStorage.setItem("inlaw-prof", "1"); sessionStorage.setItem("inlaw-senha", senha); }
-    else { sessionStorage.removeItem("inlaw-prof"); sessionStorage.removeItem("inlaw-senha"); }
-  } catch {}
-  ligar ? abrirPainel() : fecharPainel();
+function sairDoModoProfessor() {
+  const passe = passeProf();
+  if (passe) planilha({ acao: "sair", token: passe }).catch(() => {});
+  try { sessionStorage.removeItem("inlaw-passe"); sessionStorage.removeItem("inlaw-senha"); sessionStorage.removeItem("inlaw-prof"); } catch {}
+  document.body.classList.remove("prof");
+  encontros = null;
+  fecharPainel();
 }
 
 // Painel da área do professor (abre por cima do site)
@@ -416,8 +357,7 @@ function abrirPainel() {
   if (!$("area-professor")) return;
   $("area-professor").hidden = false;
   document.body.classList.add("painel-aberto");
-  if (githubConfigurado() && !encontrosDoGitHub) $("encontros").innerHTML = '<p class="vazio">Carregando encontros…</p>';
-  else desenharCalendarios();
+  desenharCalendarios();
   carregarEncontros().then(desenharCalendarios);
 }
 function fecharPainel() {
@@ -426,17 +366,16 @@ function fecharPainel() {
   document.body.classList.remove("painel-aberto");
 }
 
-// Ícone de pessoa na barra do topo
 const aoClicar = (id, fn) => { const el = $(id); if (el) el.onclick = fn; };
-aoClicar("btn-prof", () => document.body.classList.contains("prof") ? abrirPainel() : pedirSenha());
+aoClicar("btn-prof", () => passeProf() ? abrirPainel() : pedirSenha());   // ícone de pessoa no topo
 aoClicar("fechar-painel", fecharPainel);
-aoClicar("sair-prof", () => modoProfessor(false));
+aoClicar("sair-prof", sairDoModoProfessor);
 if (!$("novo-encontro") && document.querySelector(".painel-acoes")) {
   const botao = Object.assign(document.createElement("button"), { id: "novo-encontro", type: "button", className: "acao", textContent: "+ Novo encontro" });
   document.querySelector(".painel-acoes").prepend(botao);
 }
 aoClicar("novo-encontro", novoEncontro);
-aoClicar("exportar-tudo", () => exportarPlanilha(URL_PLANILHA ? todosEncontros().map(e => e.data) : Object.keys(lerChamadasLocais()).sort()));
+aoClicar("exportar-tudo", () => exportarPlanilha((encontros || []).map(e => e.data)));
 
 function pedirSenha() {
   abrir(`
@@ -445,66 +384,43 @@ function pedirSenha() {
       <p>Acesso restrito à coordenação para fazer a chamada dos encontros.</p>
       <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" required>
       <p class="aviso" id="erro-login" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
-      <button>Entrar</button>
+      <button id="entrar">Entrar</button>
     </form>`);
   $("senha").focus();
 
   $("form-login").onsubmit = async ev => {
     ev.preventDefault();
-    const senha = $("senha").value;
-    if (await sha256(senha) !== HASH_SENHA) {
-      $("erro-login").textContent = "Senha incorreta.";
-      return;
+    $("entrar").disabled = true;
+    $("entrar").textContent = "Conferindo…";
+    try {
+      const r = await planilha({ acao: "login", senha: $("senha").value });
+      if (!r.ok) throw new Error(r.erro);
+      modal.close();
+      entrarNoModoProfessor(r.token);
+    } catch (erro) {
+      $("erro-login").textContent = erro.message;
+      $("entrar").disabled = false;
+      $("entrar").textContent = "Entrar";
+      $("senha").select();
     }
-    modal.close();
-    modoProfessor(true, senha);
   };
 }
 
 
-// ---------- Onde as presenças ficam ----------
-// Com URL_PLANILHA: na Planilha Google (alunos respondem pelo celular via QR code).
-// Sem URL_PLANILHA: neste aparelho/navegador (exporte a planilha ao fim de cada encontro).
-const CHAVE_CHAMADAS = "inlaw-chamadas";
-const lerChamadasLocais = () => lerJSON(CHAVE_CHAMADAS, {});
-const contarPresentes = data => URL_PLANILHA ? (cachePresentes[data] ?? null) : (lerChamadasLocais()[data] || []).length;
+// ---------- Presenças ----------
 const cachePresentes = {};
-const horaAgora = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-async function enviarPlanilha(dados) {
-  // text/plain evita bloqueio de CORS no Apps Script
-  const r = await fetch(URL_PLANILHA, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(dados) });
-  return r.json();
-}
 
 const presencas = {
   async listar(data) {
-    if (!URL_PLANILHA) return lerChamadasLocais()[data] || [];
-    const r = await fetch(`${URL_PLANILHA}?data=${data}&senha=${encodeURIComponent(senhaProf())}`).then(r => r.json());
+    const r = await comoProfessor({ acao: "listar", data });
     if (!r.ok) throw new Error(r.erro);
     cachePresentes[data] = r.presentes.length;
     return r.presentes;
   },
-  async registrar(data, nome, comoProfessor) {
-    if (!URL_PLANILHA) {
-      const todas = lerChamadasLocais();
-      todas[data] ||= [];
-      if (todas[data].some(p => mesmoNome(p.nome) === mesmoNome(nome))) return { ok: false, erro: `${nome} já está na chamada deste encontro.` };
-      const hora = horaAgora();
-      todas[data].push({ nome, hora });
-      salvarJSON(CHAVE_CHAMADAS, todas);
-      return { ok: true, hora };
-    }
-    return enviarPlanilha({ acao: "presenca", data, nome, senha: comoProfessor ? senhaProf() : "" });
-  },
+  registrar: (data, nome, ehProfessor) => ehProfessor ? comoProfessor({ acao: "presenca", data, nome }) : planilha({ acao: "presenca", data, nome }),
   async remover(data, nome) {
-    if (!URL_PLANILHA) {
-      const todas = lerChamadasLocais();
-      todas[data] = (todas[data] || []).filter(p => mesmoNome(p.nome) !== mesmoNome(nome));
-      salvarJSON(CHAVE_CHAMADAS, todas);
-      return { ok: true };
-    }
-    return enviarPlanilha({ acao: "remover", data, nome, senha: senhaProf() });
+    const r = await comoProfessor({ acao: "remover", data, nome });
+    if (!r.ok) throw new Error(r.erro);
   },
 };
 
@@ -517,6 +433,8 @@ modal.addEventListener("close", () => {
 });
 
 function abrirChamada(data) {
+  if (!dataValida(data)) return;
+  clearInterval(atualizacaoAoVivo);
   abrir(`
     <div class="chamada">
       <div class="chamada-topo">
@@ -524,11 +442,11 @@ function abrirChamada(data) {
         <button class="acao" id="c-qr">Mostrar QR code</button>
       </div>
       <form id="form-chamada" autocomplete="off">
-        <input id="c-nome" placeholder="Nome completo" required>
-        <button>Registrar presença</button>
+        <input id="c-nome" placeholder="Nome completo" maxlength="80" required>
+        <button id="c-registrar">Registrar presença</button>
       </form>
       <p class="aviso" id="c-aviso"></p>
-      <div class="total"><span>Total de presentes</span><b id="c-total">0</b></div>
+      <div class="total"><span>Total de presentes</span><b id="c-total">…</b></div>
       <table>
         <thead><tr><th>#</th><th>Nome</th><th>Horário</th><th></th></tr></thead>
         <tbody id="c-lista"></tbody>
@@ -545,13 +463,13 @@ function abrirChamada(data) {
   async function mostrarLista() {
     let lista;
     try { lista = await presencas.listar(data); }
-    catch (erro) { aviso.textContent = "Não foi possível carregar a lista: " + erro.message; return; }
+    catch (erro) { if ($("c-aviso")) aviso.textContent = "Não foi possível carregar a lista: " + erro.message; return; }
     if (!$("c-lista")) return;   // a janela já foi fechada
 
     $("c-total").textContent = lista.length;
     $("c-lista").innerHTML = lista.map((p, i) => `
       <tr>
-        <td>${i + 1}</td><td>${escapar(p.nome)}</td><td>${p.hora}</td>
+        <td>${i + 1}</td><td>${escapar(p.nome)}</td><td>${escapar(p.hora)}</td>
         <td><button aria-label="Remover ${escapar(p.nome)}" data-nome="${escapar(p.nome)}">×</button></td>
       </tr>`).join("");
 
@@ -564,7 +482,7 @@ function abrirChamada(data) {
         }
         removerQuem = null;
         aviso.textContent = "";
-        await presencas.remover(data, botao.dataset.nome);
+        try { await presencas.remover(data, botao.dataset.nome); } catch (erro) { aviso.textContent = erro.message; }
         mostrarLista();
       };
     });
@@ -574,21 +492,28 @@ function abrirChamada(data) {
     ev.preventDefault();
     const nome = campoNome.value.trim().replace(/\s+/g, " ");
     if (!nome) return;
+    if (!nomeValido(nome)) { aviso.textContent = "Escreva nome e sobrenome, só com letras."; return; }
 
-    const r = await presencas.registrar(data, nome, true);
-    if (!r.ok) { aviso.textContent = r.erro; return; }
-    aviso.textContent = "";
-    campoNome.value = "";
+    $("c-registrar").disabled = true;
+    try {
+      const r = await presencas.registrar(data, nome, true);
+      if (!r.ok) throw new Error(r.erro);
+      aviso.textContent = "";
+      campoNome.value = "";
+      mostrarLista();
+    } catch (erro) {
+      aviso.textContent = erro.message;
+    }
+    $("c-registrar").disabled = false;
     campoNome.focus();
-    mostrarLista();
   };
 
   $("c-qr").onclick = () => mostrarQR(data);
   $("c-exportar").onclick = () => exportarPlanilha([data]);
-  $("c-exportar-todos").onclick = () => exportarPlanilha(URL_PLANILHA ? todosEncontros().map(e => e.data) : Object.keys(lerChamadasLocais()).sort());
+  $("c-exportar-todos").onclick = () => exportarPlanilha((encontros || []).map(e => e.data));
 
   mostrarLista();
-  if (URL_PLANILHA) atualizacaoAoVivo = setInterval(mostrarLista, 5000);
+  atualizacaoAoVivo = setInterval(mostrarLista, 5000);
   campoNome.focus();
 }
 
@@ -597,25 +522,19 @@ function abrirChamada(data) {
 function mostrarQR(data) {
   clearInterval(atualizacaoAoVivo);
   const link = `${location.origin}${location.pathname}?presenca=${data}`;
-
-  if (!URL_PLANILHA) {
-    abrir(`<div class="qr-tela"><h1>Falta ligar a planilha</h1>
-      <p class="qr-dica">Para os alunos responderem pelo celular, as respostas precisam ir para a Planilha Google.
-      Siga o passo a passo do arquivo LEIA-ME-chamada.txt e cole o link em URL_PLANILHA, no topo do script.js.</p>
-      <button class="acao" id="qr-voltar">Voltar para a chamada</button></div>`);
-    $("qr-voltar").onclick = () => abrirChamada(data);
-    return;
-  }
+  const ehHoje = data === hojeISO();
 
   abrir(`
     <div class="qr-tela">
       <p class="qr-dica">Aponte a câmera do celular para registrar sua presença</p>
       <h1>Chamada · ${dataBR(data)}</h1>
+      ${ehHoje ? "" : '<p class="aviso" style="color:#B3261E">Atenção: os alunos só conseguem marcar presença pelo QR code no dia do encontro.</p>'}
       <div id="qr-codigo"></div>
       <p class="qr-total"><b id="qr-total">${cachePresentes[data] ?? 0}</b> presentes</p>
       <button class="acao claro" id="qr-voltar">Voltar para a lista</button>
     </div>`);
-  new QRCode($("qr-codigo"), { text: link, width: 340, height: 340, colorDark: "#3A1A5C", colorLight: "#ffffff" });
+  if (window.QRCode) new QRCode($("qr-codigo"), { text: link, width: 340, height: 340, colorDark: "#3A1A5C", colorLight: "#ffffff" });
+  else $("qr-codigo").textContent = link;
   $("qr-voltar").onclick = () => abrirChamada(data);
 
   const atualizarTotal = async () => {
@@ -637,21 +556,21 @@ function paginaDoAluno(data) {
       <h1>Presença · ${dataBR(data)}</h1>
       <p>Encontro do InLaw – Laboratório de Inovação e Direito</p>
       <div id="presenca-campos">
-        <input id="p-nome" name="name" placeholder="Nome completo" autocomplete="name" required>
+        <input id="p-nome" name="name" placeholder="Nome completo" autocomplete="name" maxlength="80" required>
         <p class="aviso" id="p-aviso" style="color:#B3261E;min-height:1.2em;margin:0 0 10px"></p>
         <button id="p-enviar">Registrar presença</button>
       </div>
     </form>`);
 
   const concluido = hora => {
-    $("presenca-campos").innerHTML = `<p class="presenca-ok">✓ Presença registrada${hora ? " às " + hora : ""}.<br>Bom encontro!</p>`;
+    $("presenca-campos").innerHTML = `<p class="presenca-ok">✓ Presença registrada${hora ? " às " + escapar(hora) : ""}.<br>Bom encontro!</p>`;
   };
   if (jaRespondeu) return concluido(jaRespondeu.hora);
 
   $("form-presenca").onsubmit = async ev => {
     ev.preventDefault();
     const nome = $("p-nome").value.trim().replace(/\s+/g, " ");
-    if (!nome) return;
+    if (!nomeValido(nome)) { $("p-aviso").textContent = "Escreva seu nome completo (nome e sobrenome), só com letras."; return; }
 
     $("p-enviar").disabled = true;
     $("p-enviar").textContent = "Enviando…";
@@ -672,14 +591,15 @@ function paginaDoAluno(data) {
 
 // ---------- Planilha exportada (.csv, abre no Excel) ----------
 async function exportarPlanilha(datas) {
-  const celula = v => `"${String(v).replace(/"/g, '""')}"`;
+  // células que começam com = + - @ virariam fórmula no Excel: o apóstrofo impede isso
+  const celula = v => `"${String(v).replace(/^([=+\-@\t\r])/, "'$1").replace(/"/g, '""')}"`;
   const linha = valores => valores.map(celula).join(";");
 
   const linhas = [linha(["Data do encontro", "Nº", "Nome", "Horário da resposta"])];
   for (const data of datas) {
     let lista = [];
     try { lista = await presencas.listar(data); } catch {}
-    if (URL_PLANILHA && datas.length > 1 && !lista.length) continue;   // pula encontros sem chamada
+    if (datas.length > 1 && !lista.length) continue;   // pula encontros sem chamada
     lista.forEach((p, i) => linhas.push(linha([dataBR(data), i + 1, p.nome, p.hora])));
     linhas.push(linha([dataBR(data), "", "TOTAL DE PRESENTES", lista.length]));
     linhas.push("");
@@ -699,10 +619,11 @@ async function exportarPlanilha(datas) {
 
 
 // ---------- Ao carregar a página ----------
-try { if (sessionStorage.getItem("inlaw-prof") === "1") document.body.classList.add("prof"); } catch {}
+try { sessionStorage.removeItem("inlaw-senha"); } catch {}   // versões antigas guardavam a senha aqui
+if (passeProf()) document.body.classList.add("prof");
 
 const dataDaPresenca = new URLSearchParams(location.search).get("presenca");
-if (dataDaPresenca) paginaDoAluno(dataDaPresenca);
+if (dataDaPresenca && dataValida(dataDaPresenca)) paginaDoAluno(dataDaPresenca);
 
 
 // ---------- Galeria em movimento ----------
@@ -715,7 +636,7 @@ function mostrarFotos(fotos) {
   }
 
   const caminho = PASTA_FOTOS ? PASTA_FOTOS + "/" : "";
-  const foto = n => `<button aria-label="Ampliar foto: ${nomeDoArquivo(n)}"><img src="${caminho}${n}" alt="${nomeDoArquivo(n)}"></button>`;
+  const foto = n => `<button aria-label="Ampliar foto: ${escapar(nomeDoArquivo(n))}"><img src="${escapar(caminho + n)}" alt="${escapar(nomeDoArquivo(n))}"></button>`;
 
   // cada faixa repete as fotos para a rolagem nunca ter buraco
   const faixa = (lista, aoContrario) => {
@@ -738,14 +659,14 @@ function mostrarFotos(fotos) {
   galeria.querySelectorAll("button").forEach(botao => {
     botao.onclick = () => {
       const img = botao.querySelector("img");
-      abrir(`<img class="cheia" src="${img.src}" alt="${img.alt}">`);
+      abrir(`<img class="cheia" src="${escapar(img.src)}" alt="${escapar(img.alt)}">`);
     };
   });
 }
 
 const ehFotoDaGaleria = arq =>
   arq.type === "file" &&
-  /\.(jpe?g|png|webp)$/i.test(arq.name) &&
+  /^[\w.-]+\.(jpe?g|png|webp)$/i.test(arq.name) &&
   !/^(favicon|icone|apple-touch-icon)|^(logo|capa|encontro|aline|pedro|cartilha)\./i.test(arq.name);   // essas são usadas em outros lugares do site
 
 fetch(urlGitHub(PASTA_FOTOS))
@@ -790,12 +711,15 @@ const iconeCursor = '<svg width="18" height="22" viewBox="0 0 18 22"><path d="M2
 
 // O quadrado no estilo dos posts do Instagram
 function arteDoPost(p) {
-  if (p.capa) return `<div class="arte foto" style="background-image:url('${p.capa}')" role="img" aria-label="${p.titulo}"></div>`;
+  // capa: só nomes de arquivo simples ou links https
+  if (p.capa && /^(https:\/\/[^\s'"()]+|[\w./-]+)$/.test(p.capa)) {
+    return `<div class="arte foto" style="background-image:url('${escapar(p.capa)}')" role="img" aria-label="${escapar(p.titulo)}"></div>`;
+  }
   return `<div class="arte" aria-hidden="true">
     <span class="menu-i"><i></i><i></i><i></i></span>
-    <span class="serie">${p.serie}</span>
+    <span class="serie">${escapar(p.serie)}</span>
     <span class="elipse"></span>
-    <span class="titulo">${p.titulo}</span>
+    <span class="titulo">${escapar(p.titulo)}</span>
     <span class="busca">Você sabe o que é? <b>${iconeLupa}</b></span>
     <span class="legenda">Leia a legenda ${iconeCursor}</span>
   </div>`;
@@ -809,7 +733,7 @@ function mostrarFeed(posts) {
   function desenhar() {
     // botões de filtro só aparecem se houver mais de uma série
     $("filtros").innerHTML = series.length > 2
-      ? series.map(s => `<button aria-pressed="${s === filtro}">${s}</button>`).join("")
+      ? series.map(s => `<button aria-pressed="${s === filtro}">${escapar(s)}</button>`).join("")
       : "";
     document.querySelectorAll("#filtros button").forEach(botao => {
       botao.onclick = () => { filtro = botao.textContent; desenhar(); };
@@ -821,9 +745,9 @@ function mostrarFeed(posts) {
         <button class="post" data-i="${posts.indexOf(p)}">
           ${arteDoPost(p)}
           <div class="info">
-            <small>${[p.autor, p.data].filter(Boolean).join(" · ") || p.serie}</small>
-            <h3>${p.titulo}</h3>
-            <p>${resumo(p.corpo)}</p>
+            <small>${escapar([p.autor, p.data].filter(Boolean).join(" · ") || p.serie)}</small>
+            <h3>${escapar(p.titulo)}</h3>
+            <p>${escapar(resumo(p.corpo))}</p>
             <span class="ler">Ler explicação</span>
           </div>
         </button>`).join("");
@@ -832,9 +756,9 @@ function mostrarFeed(posts) {
       botao.onclick = () => {
         const p = posts[botao.dataset.i];
         abrir(`<article class="leitura">
-          <small>${[p.serie, p.autor, p.data].filter(Boolean).join(" · ")}</small>
-          <h1>${p.titulo}</h1>
-          ${window.marked ? marked.parse(p.corpo) : p.corpo.split(/\n\n+/).map(par => `<p>${escapar(par)}</p>`).join("")}
+          <small>${escapar([p.serie, p.autor, p.data].filter(Boolean).join(" · "))}</small>
+          <h1>${escapar(p.titulo)}</h1>
+          ${window.marked ? htmlSeguro(marked.parse(p.corpo)) : p.corpo.split(/\n\n+/).map(par => `<p>${escapar(par)}</p>`).join("")}
         </article>`);
       };
     });
@@ -847,7 +771,7 @@ fetch(urlGitHub(PASTA_BLOG))
   .then(r => r.ok ? r.json() : Promise.reject())
   .then(arquivos => Promise.all(
     arquivos
-      .filter(a => a.name.endsWith(".md"))
+      .filter(a => /^[\w.-]+\.md$/.test(a.name))
       .sort((a, b) => b.name.localeCompare(a.name))   // mais novos primeiro
       .map(a => fetch(`${PASTA_BLOG}/${a.name}`).then(r => r.text()).then(t => lerPost(t, a.name)))
   ))
