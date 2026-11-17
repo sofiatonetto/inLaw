@@ -21,6 +21,7 @@ const MEMBROS = [
   "Vitoria Jacques Maronn",
   "Livia Garay", 
   "Ana Laura Simionato", 
+  "Milton Airison", 
   "Sofia Valentina Tonetto",
 ];
 
