@@ -31,7 +31,7 @@ const ENCONTROS = [
 
 // Link do "App da Web" da Planilha Google (passo a passo no LEIA-ME-chamada.txt).
 // A senha da Área do professor fica guardada só na planilha, nunca aqui no site.
-const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbzl0mlw1fkeyH9RlI8YsIOIJgymH1NDiRQ6skcF_Q1vVSKoYgWwlJN6mAzBhfEZWFi2AA/exec";
+const URL_PLANILHA = "https://script.google.com/macros/s/AKfycbymGXHLqUAQhrVFx3cIyOL0sZW_0SCejmRBLGK4II79e7x95dBRt3G53PmV85ym8qVaKw/exec";
 
 // Fotos usadas na galeria se o site não conseguir ler o GitHub
 const FOTOS_PADRAO = [
