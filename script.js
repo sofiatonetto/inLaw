@@ -18,6 +18,9 @@ const MEMBROS = [
   "Mariely Martins Fagundes",
   "Matheus Almeida de Siqueira",
   "Luiza Charão Dutra",
+  "Vitoria Jacques Maronn",
+  "Livia Garay", 
+  "Ana Laura Simionato", 
   "Sofia Valentina Tonetto",
 ];
 
